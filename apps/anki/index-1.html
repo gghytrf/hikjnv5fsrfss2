@@ -54,27 +54,27 @@
     else { document.addEventListener('DOMContentLoaded', injectCss); }
   }catch(e){}
 
-    // ===== コピー無効化（コンテンツ保護）=====
-    // テキスト選択・右クリック・長押しを抑止。ただし入力欄は除外（カルテ/検索/メモは操作可）。
-    var cpCss = document.createElement('style');
-    cpCss.textContent =
-      'html{-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;' +
-      '-webkit-touch-callout:none;}' +
-      'input,textarea,[contenteditable="true"],[contenteditable=""]{' +
-      '-webkit-user-select:text !important;-moz-user-select:text !important;' +
-      '-ms-user-select:text !important;user-select:text !important;-webkit-touch-callout:default !important;}';
-    (document.head||document.documentElement).appendChild(cpCss);
-    var isEditable = function(t){
-      if(!t) return false;
-      var tag=(t.tagName||'').toLowerCase();
-      if(tag==='input'||tag==='textarea') return true;
-      if(t.isContentEditable) return true;
-      return false;
-    };
-    document.addEventListener('contextmenu', function(e){ if(!isEditable(e.target)) e.preventDefault(); }, {capture:true});
-    document.addEventListener('copy', function(e){ if(!isEditable(e.target)) e.preventDefault(); }, {capture:true});
-    document.addEventListener('cut', function(e){ if(!isEditable(e.target)) e.preventDefault(); }, {capture:true});
-    document.addEventListener('dragstart', function(e){ if(!isEditable(e.target)) e.preventDefault(); }, {capture:true});
+  // ===== コピー無効化（コンテンツ保護）=====
+  // テキスト選択・右クリック・長押し・ドラッグを抑止。ただし入力欄は除外。
+  var cpCss = document.createElement('style');
+  cpCss.textContent =
+    'html{-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;' +
+    '-webkit-touch-callout:none;}' +
+    'input,textarea,[contenteditable="true"],[contenteditable=""]{' +
+    '-webkit-user-select:text !important;-moz-user-select:text !important;' +
+    '-ms-user-select:text !important;user-select:text !important;-webkit-touch-callout:default !important;}';
+  (document.head||document.documentElement).appendChild(cpCss);
+  var isEditable = function(t){
+    if(!t) return false;
+    var tag=(t.tagName||'').toLowerCase();
+    if(tag==='input'||tag==='textarea') return true;
+    if(t.isContentEditable) return true;
+    return false;
+  };
+  document.addEventListener('contextmenu', function(e){ if(!isEditable(e.target)) e.preventDefault(); }, {capture:true});
+  document.addEventListener('copy',      function(e){ if(!isEditable(e.target)) e.preventDefault(); }, {capture:true});
+  document.addEventListener('cut',       function(e){ if(!isEditable(e.target)) e.preventDefault(); }, {capture:true});
+  document.addEventListener('dragstart', function(e){ if(!isEditable(e.target)) e.preventDefault(); }, {capture:true});
 
   })();
 </script>
@@ -86,7 +86,6 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="暗記アプリ">
-<link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap');
@@ -3752,34 +3751,14 @@ async function forceUpdate(){
     ]);
   }catch(e){}
   // ④ キャッシュバスター付きURLで再読み込み（ブラウザキャッシュも無視）
+  sessionStorage.setItem('forceSwReload','1'); // controllerchange でリロードを許可
   const url=new URL(location.href);
   url.searchParams.set('_v', Date.now());
   location.replace(url.toString());
 }
 if(updBtn) updBtn.onclick=forceUpdate;
 
-// Service Worker 登録（GitHub Pages のサブパスにも対応するため相対パス）
-if('serviceWorker' in navigator){
-  window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('sw.js').then(reg=>{
-      // 新しいSWが見つかったら自動で待機解除→更新通知
-      reg.addEventListener('updatefound',()=>{
-        const nw=reg.installing;
-        if(!nw)return;
-        nw.addEventListener('statechange',()=>{
-          if(nw.state==='installed' && navigator.serviceWorker.controller){
-            if(updBtn){ updBtn.classList.add('has-update'); updBtn.textContent='⟳ 新版あり'; }
-          }
-        });
-      });
-    }).catch(()=>{});
-    // 制御SWが切り替わったら一度だけリロード
-    let refreshing=false;
-    navigator.serviceWorker.addEventListener('controllerchange',()=>{
-      if(refreshing)return;refreshing=true;location.reload();
-    });
-  });
-}
+// Service Worker 登録は統合ホーム（index.html）が一元管理するため省略
 
 loadVersion().then(()=>{ setTimeout(checkForUpdate, 1500); });
 </script>
