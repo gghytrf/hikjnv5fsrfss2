@@ -2829,6 +2829,12 @@ function go(target){
 }
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>go(t.dataset.name)));
 
+// acu_fwd がデフォルト表示タブのため、ページロード時に自動でデータ読み込みを開始する
+if(window.AcuModule && !window._acuInited){
+  window._acuInited = true;
+  AcuModule.init();
+}
+
 /* ============================================================
    使い方モーダル
    ============================================================ */

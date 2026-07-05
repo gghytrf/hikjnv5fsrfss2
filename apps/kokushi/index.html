@@ -2639,8 +2639,8 @@ function execSearch() {
   // 検索対象プールを scope に応じて決定
   let allQ;
   if (scope === 'all') {
-    // 全問題から検索（除外設定をすべて無視）
-    allQ = state.questions;
+    // 全問題から検索（本試験専用問題は除く・年度除外・出題除外は無視）
+    allQ = state.questions.filter(q => !isExamOnlyQuestion(q));
   } else {
     // 出題される問題のみ（除外設定に基づいた範囲）
     allQ = filterByExamType(state.questions);
