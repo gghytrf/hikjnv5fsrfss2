@@ -2829,11 +2829,6 @@ function go(target){
 }
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>go(t.dataset.name)));
 
-// acu_fwd がデフォルト表示タブのため、ページロード時に自動でデータ読み込みを開始する
-if(window.AcuModule && !window._acuInited){
-  window._acuInited = true;
-  AcuModule.init();
-}
 
 /* ============================================================
    使い方モーダル
@@ -3313,6 +3308,12 @@ function hasData(){ return Array.isArray(DATA) && DATA.length>0; }
 
 return { init:acuInit, openDetailByName, hasData, reload:loadData, run, runRev, renderSrc, renderMer };
 })();
+
+// acu_fwd がデフォルト表示タブのため、AcuModule定義直後に自動で読み込みを開始する
+if(window.AcuModule && !window._acuInited){
+  window._acuInited = true;
+  AcuModule.init();
+}
 
 /* ===== 統合：弁証の経穴名タップ → 経穴詳細モーダル ===== */
 (function(){
