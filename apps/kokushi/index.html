@@ -2639,10 +2639,10 @@ function execSearch() {
   // 検索対象プールを scope に応じて決定
   let allQ;
   if (scope === 'all') {
-    // 全問題から検索（本試験専用問題と除外年度のみ除く）
-    allQ = state.questions.filter(q => !isExamOnlyQuestion(q) && !isYearExcluded(q));
+    // 全問題から検索（除外設定をすべて無視）
+    allQ = state.questions;
   } else {
-    // 出題される問題のみ（試験種別フィルター・除外年度・出題除外問題を考慮、本試験専用は検索対象外）
+    // 出題される問題のみ（除外設定に基づいた範囲）
     allQ = filterByExamType(state.questions);
   }
 

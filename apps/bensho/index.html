@@ -3246,31 +3246,31 @@ async function acuInit(){
   loadState();
   renderChips();renderTerms();
   $("#mode").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x.dataset.m===mode));
-  // 読み込み中スピナー表示
-  var _sp = document.getElementById('acu-spinner');
-  if(!_sp){
-    _sp = document.createElement('div');
-    _sp.id = 'acu-spinner';
-    _sp.style.cssText = 'text-align:center;padding:40px 0;font-size:14px;color:var(--sub,#888);';
-    _sp.innerHTML = '<div style="display:inline-block;width:28px;height:28px;border:3px solid #ccc;border-top-color:var(--accent,#7a5c3e);border-radius:50%;animation:_sp-spin 0.7s linear infinite;margin-bottom:8px;"></div><br>経穴データを読み込み中…';
+
+  // 読み込み中オーバーレイ（position:fixed でDOMに干渉しない）
+  (function(){
     if(!document.getElementById('_sp-style')){
       var st=document.createElement('style'); st.id='_sp-style';
       st.textContent='@keyframes _sp-spin{to{transform:rotate(360deg)}}';
       document.head.appendChild(st);
     }
-  }
-  // 検索エリアにスピナーを挿入
-  var _target = $("#pane-fwd") || $("#srcgrid") || document.querySelector('.search-wrap');
-  if(_target) _target.prepend(_sp);
-  _sp.style.display = 'block';
+    document.body.insertAdjacentHTML('beforeend',
+      '<div id="_acu-overlay" style="position:fixed;inset:0;z-index:9000;display:flex;flex-direction:column;' +
+      'align-items:center;justify-content:center;background:rgba(244,239,228,.92);font-family:sans-serif;color:#7a5c3e;">' +
+      '<div style="width:32px;height:32px;border:3px solid #d8cdb6;border-top-color:#7a5c3e;border-radius:50%;' +
+      'animation:_sp-spin 0.7s linear infinite;margin-bottom:12px;"></div>' +
+      '経穴データを読み込み中…</div>');
+  })();
 
   const ok = await loadData();
 
-  // スピナー除去
-  if(_sp) _sp.style.display = 'none';
+  // オーバーレイ除去
+  var _ov = document.getElementById('_acu-overlay');
+  if(_ov) _ov.remove();
 
-  // SOURCES はデータ読み込み後に確定するため、ここで出典フィルタを描画
+  // SOURCES はデータ読み込み後に確定するため、ここで出典フィルタと症状チップを再描画
   renderSrc();
+  renderChips();
   if(ok){ run(); renderMer(); }
 }
 
