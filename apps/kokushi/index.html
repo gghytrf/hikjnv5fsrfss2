@@ -1156,6 +1156,15 @@ const state = {
 // 初期化
 //=========================================================
 async function init() {
+  // 読み込み中オーバーレイ表示
+  (function(){
+  if(!document.getElementById('_sp-style')){
+    var st=document.createElement('style'); st.id='_sp-style';
+    st.textContent='@keyframes _sp-spin{to{transform:rotate(360deg)}}';
+    document.head.appendChild(st);
+  }
+    document.body.insertAdjacentHTML('beforeend', '<div style="position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#f5f7fa;font-family:sans-serif;color:#7a8a99;" id="_load-overlay"><div style="width:36px;height:36px;border:3px solid #ddd;border-top-color:#2c5f7c;border-radius:50%;animation:_sp-spin 0.7s linear infinite;margin-bottom:16px;"></div>読み込み中…</div>');
+  })();
   await openDB();
   const hasData = await loadQuestionData();
   if (!hasData || BUNDLED_QUESTIONS.length === 0) {
@@ -1183,7 +1192,9 @@ async function init() {
 
 // 問題データが用意できた後の初期化（取り込み直後にも呼べるよう分離）
 async function afterDataReady() {
-  hideImportPrompt();
+  // 読み込み完了：オーバーレイ除去
+  var _ov = document.getElementById('_load-overlay');
+  if(_ov) _ov.remove();
   state.questions = BUNDLED_QUESTIONS;
 
   // 進捗・メモ・設定読み込み

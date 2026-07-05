@@ -3246,7 +3246,29 @@ async function acuInit(){
   loadState();
   renderChips();renderTerms();
   $("#mode").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x.dataset.m===mode));
-  const ok=await loadData();
+  // 読み込み中スピナー表示
+  var _sp = document.getElementById('acu-spinner');
+  if(!_sp){
+    _sp = document.createElement('div');
+    _sp.id = 'acu-spinner';
+    _sp.style.cssText = 'text-align:center;padding:40px 0;font-size:14px;color:var(--sub,#888);';
+    _sp.innerHTML = '<div style="display:inline-block;width:28px;height:28px;border:3px solid #ccc;border-top-color:var(--accent,#7a5c3e);border-radius:50%;animation:_sp-spin 0.7s linear infinite;margin-bottom:8px;"></div><br>経穴データを読み込み中…';
+    if(!document.getElementById('_sp-style')){
+      var st=document.createElement('style'); st.id='_sp-style';
+      st.textContent='@keyframes _sp-spin{to{transform:rotate(360deg)}}';
+      document.head.appendChild(st);
+    }
+  }
+  // 検索エリアにスピナーを挿入
+  var _target = $("#pane-fwd") || $("#srcgrid") || document.querySelector('.search-wrap');
+  if(_target) _target.prepend(_sp);
+  _sp.style.display = 'block';
+
+  const ok = await loadData();
+
+  // スピナー除去
+  if(_sp) _sp.style.display = 'none';
+
   // SOURCES はデータ読み込み後に確定するため、ここで出典フィルタを描画
   renderSrc();
   if(ok){ run(); renderMer(); }

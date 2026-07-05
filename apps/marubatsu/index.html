@@ -533,6 +533,15 @@ async function mbLoadQuestions(){
 // mbShowImportPrompt / mbHideImportPrompt / mbReimport は廃止（fetch方式に移行）
 
 async function loadData(){
+  // 読み込み中オーバーレイ表示
+  (function(){
+    if(!document.getElementById('_sp-style')){
+      var st=document.createElement('style'); st.id='_sp-style';
+      st.textContent='@keyframes _sp-spin{to{transform:rotate(360deg)}}';
+      document.head.appendChild(st);
+    }
+    document.body.insertAdjacentHTML('beforeend', '<div style="position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#f5f7fa;font-family:sans-serif;color:#7a8a99;" id="_load-overlay"><div style="width:36px;height:36px;border:3px solid #ddd;border-top-color:#2c5f7c;border-radius:50%;animation:_sp-spin 0.7s linear infinite;margin-bottom:16px;"></div>読み込み中…</div>');
+  })();
   _mbdb = await mbOpenDB();
   await loadProgressAll();
   // 除外年度を読み込む
@@ -548,6 +557,9 @@ async function loadData(){
       '<p style="color:#7a8a99;">marubatsu_questions.json が同フォルダに存在するか確認し、再度開いてください。</p></div>';
     return;
   }
+  // 読み込み完了：オーバーレイ除去
+  var _ov = document.getElementById('_load-overlay');
+  if(_ov) _ov.remove();
   buildFilters();
   refreshHome();
 }

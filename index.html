@@ -2,13 +2,13 @@
 <html lang="ja">
 <head>
 <script>
-/* ===== 統合アプリ用ガード（自動挿入・元コードは未変更）=====
+/* ===== 統合アプリ用ガード（iframe内のみ動作）=====
    iframe 内で動くとき、各アプリ独自の Service Worker 登録／キャッシュ操作／
    バージョン確認を無効化し、キャッシュとバージョン管理を親（統合ホーム）へ
    一元化します。localStorage（学習データ・カルテ等）はそのまま使えます。 */
 (function(){
   try{
-    if (window.top === window.self) return; // 単体起動時は何もしない
+    if (window.top === window.self) return; // 単体起動時は何もしない（以下はiframe内のみ）
 
     // 1) Service Worker を無害なスタブに
     var swStub = {
@@ -52,29 +52,33 @@
     if(document.head){ injectCss(); }
     else { document.addEventListener('DOMContentLoaded', injectCss); }
   }catch(e){}
+})();
 
-  // ===== コピー無効化（コンテンツ保護）=====
+/* ===== コピー無効化（コンテンツ保護）===== 常時動作（iframe内外問わず）
+   .selectable クラスの要素（メールアドレス等）は選択・コピーを許可。 */
+(function(){
   var cpCss = document.createElement('style');
   cpCss.textContent =
     'html{-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;' +
     '-webkit-touch-callout:none;}' +
-    'input,textarea,[contenteditable="true"],[contenteditable=""]{' +
+    'input,textarea,[contenteditable="true"],[contenteditable=""],.selectable{' +
     '-webkit-user-select:text !important;-moz-user-select:text !important;' +
     '-ms-user-select:text !important;user-select:text !important;-webkit-touch-callout:default !important;}';
   (document.head||document.documentElement).appendChild(cpCss);
-  var isEditable = function(t){
+  function isAllowed(t){
     if(!t) return false;
     var tag=(t.tagName||'').toLowerCase();
     if(tag==='input'||tag==='textarea') return true;
     if(t.isContentEditable) return true;
+    // selectable クラスを持つ要素またはその子孫
+    if(t.closest && t.closest('.selectable')) return true;
     return false;
-  };
-  document.addEventListener('contextmenu', function(e){ if(!isEditable(e.target)) e.preventDefault(); }, {capture:true});
-  document.addEventListener('copy',      function(e){ if(!isEditable(e.target)) e.preventDefault(); }, {capture:true});
-  document.addEventListener('cut',       function(e){ if(!isEditable(e.target)) e.preventDefault(); }, {capture:true});
-  document.addEventListener('dragstart', function(e){ if(!isEditable(e.target)) e.preventDefault(); }, {capture:true});
-
-  })();
+  }
+  document.addEventListener('contextmenu', function(e){ if(!isAllowed(e.target)) e.preventDefault(); }, {capture:true});
+  document.addEventListener('copy',      function(e){ if(!isAllowed(e.target)) e.preventDefault(); }, {capture:true});
+  document.addEventListener('cut',       function(e){ if(!isAllowed(e.target)) e.preventDefault(); }, {capture:true});
+  document.addEventListener('dragstart', function(e){ if(!isAllowed(e.target)) e.preventDefault(); }, {capture:true});
+})();
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
