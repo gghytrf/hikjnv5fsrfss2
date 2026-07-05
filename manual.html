@@ -291,16 +291,16 @@ footer a{color:var(--mid)}
 <div class="cover"><div class="cover-inner">
   <span class="cover-eyebrow">USER MANUAL</span>
   <h1>東洋医学 <em>学習スイート</em></h1>
-  <p class="cover-sub">7つのアプリと、まとめてバックアップ</p>
+  <p class="cover-sub">7つのアプリ統合・オンライン専用・学習データは端末に保存</p>
   <span class="cover-ver">統合ホーム</span>
-  <div class="cover-chips"><div class="chip"><strong>🗂️</strong>7アプリを統合</div><div class="chip"><strong>🔄</strong>更新は確認ボタン</div><div class="chip"><strong>💾</strong>一括バックアップ</div><div class="chip"><strong>📴</strong>オフライン対応</div></div>
+  <div class="cover-chips"><div class="chip"><strong>🗂️</strong>7アプリを統合</div><div class="chip"><strong>🔄</strong>自動更新</div><div class="chip"><strong>💾</strong>一括バックアップ</div><div class="chip"><strong>🌐</strong>オンライン専用</div></div>
   <div class="cover-credits">東洋医学 学習スイート<br>制作者：大阪行岡医療専門学校長柄校　鍼灸科　75期生</div>
 </div></div>
 <div class="toc-section"><div class="wrap"><h2>TABLE OF CONTENTS</h2><div class="toc-grid"><a class="toc-item" href="#h1"><span class="toc-num">01</span>学習スイートについて</a><a class="toc-item" href="#h2"><span class="toc-num">02</span>7つのアプリ</a><a class="toc-item" href="#h3"><span class="toc-num">03</span>基本の使い方</a><a class="toc-item" href="#h4"><span class="toc-num">04</span>学習データのバックアップ</a><a class="toc-item" href="#h5"><span class="toc-num">05</span>困ったときは</a><a class="toc-item" href="#h6"><span class="toc-num">06</span>PWAとしてインストール</a></div></div></div>
 <div class="section" id="h1"><div class="wrap">
   <div class="section-header"><div class="sec-num">01</div>
   <div class="section-header-text"><h2>学習スイートについて</h2><p>7つのアプリを1つにまとめた学習環境</p></div></div>
-  <p class="prose">「東洋医学 学習スイート」は、あん摩マッサージ指圧師・はり師きゅう師の国家試験対策と臨床補助のためのアプリをまとめたものです。ホーム画面から各アプリを開いて使います。学習履歴や設定は各アプリごとに端末内へ保存され、バックアップはホームからまとめて行えます。</p><div class="callout callout-info"><div class="ico">📴</div><div class="body"><h4>オフライン対応</h4><p>一度開けば、通信のない場所でも起動・利用できます。インターネットに接続するのは、ホーム下部の「🔄 更新確認」ボタンを押したときだけです。押すとバージョンを確認し、新しい版があれば最新に切り替えます。</p></div></div><div class="callout callout-info"><div class="ico">📥</div><div class="body"><h4>問題・経穴データの取り込み（国試学習・〇×問題集・弁証・選穴支援）</h4><p>これらのアプリは、初回のみ配布された JSON ファイル（questions.json／marubatsu_questions.json／acupoints.json）を「取り込み」して使います。取り込んだデータは端末内に保存され、次回からはオフラインでも使えます。データが新しくなったときは、各アプリの「📥 取り込み」（弁証・選穴支援はヘッダー）から選び直すだけで更新できます。</p></div></div>
+  <p class="prose">「東洋医学 学習スイート」は、あん摩マッサージ指圧師・はり師きゅう師の国家試験対策と臨床補助のためのアプリをまとめたものです。ホーム画面から各アプリを開いて使います。<strong>オンライン接続が必要です</strong>（問題・経穴データは毎回サーバーから取得します）。学習履歴・カルテなどユーザー固有のデータは端末内に保存されます。</p><div class="callout callout-info"><div class="ico">🌐</div><div class="body"><h4>オンライン専用</h4><p>本アプリはインターネット接続が必要です。起動時・ホーム復帰時・バックグラウンドから戻ったときに自動でバージョンを確認し、新しい版があれば更新します。更新ボタンはありません。</p></div></div><div class="callout callout-info"><div class="ico">🔄</div><div class="body"><h4>問題・経穴データは自動取得</h4><p>国試学習・〇×問題集・弁証/選穴支援アプリは、起動するたびに同フォルダ内の JSON ファイル（questions.json／marubatsu_questions.json／acupoints.json）を自動で読み込みます。手動での取り込み作業は不要です。データが端末に保存されることはありません。</p></div></div>
 </div></div><div class="section" id="h2"><div class="wrap">
   <div class="section-header"><div class="sec-num">02</div>
   <div class="section-header-text"><h2>7つのアプリ</h2><p>ホームのカードから開く</p></div></div>
@@ -308,7 +308,7 @@ footer a{color:var(--mid)}
 </div></div><div class="section" id="h3"><div class="wrap">
   <div class="section-header"><div class="sec-num">03</div>
   <div class="section-header-text"><h2>基本の使い方</h2><p>開く・戻る・更新</p></div></div>
-  <div class="steps"><div class="step"><div class="step-n">1</div><div class="step-body"><h4>アプリを開く</h4><p>ホームのカードをタップすると、そのアプリが開きます。</p></div></div><div class="step"><div class="step-n">2</div><div class="step-body"><h4>ホームに戻る</h4><p>各アプリ左上の「‹ ホーム」をタップすると、アプリ一覧に戻ります。端末の戻る操作でもホームに戻れます（アプリは終了しません）。</p></div></div><div class="step"><div class="step-n">3</div><div class="step-body"><h4>更新を確認する</h4><p>ホーム下部の「🔄 更新確認」を押すと、最新版があるかを確認します。通信するのはこのボタンを押したときだけで、新しい版があれば最新に切り替わります。ふだんはオフラインでも利用できます。</p></div></div></div>
+  <div class="steps"><div class="step"><div class="step-n">1</div><div class="step-body"><h4>アプリを開く</h4><p>ホームのカードをタップすると、そのアプリが開きます。</p></div></div><div class="step"><div class="step-n">2</div><div class="step-body"><h4>ホームに戻る</h4><p>各アプリ左上の「‹ ホーム」をタップすると、アプリ一覧に戻ります。端末の戻る操作でもホームに戻れます（アプリは終了しません）。</p></div></div><div class="step"><div class="step-n">3</div><div class="step-body"><h4>自動更新</h4><p>起動時・ホーム復帰時・バックグラウンドから戻ったとき・10分ごとに自動でバージョンを確認します。新しい版があれば、開いているアプリを保持したまま自動で更新します。更新ボタンはありません。</p></div></div></div>
 </div></div><div class="section" id="h4"><div class="wrap">
   <div class="section-header"><div class="sec-num">04</div>
   <div class="section-header-text"><h2>学習データのバックアップ</h2><p>全アプリを一括で保存・復元</p></div></div>
@@ -316,12 +316,12 @@ footer a{color:var(--mid)}
 </div></div><div class="section" id="h5"><div class="wrap">
   <div class="section-header"><div class="sec-num">05</div>
   <div class="section-header-text"><h2>困ったときは</h2><p>よくある質問</p></div></div>
-  <p class="prose"><strong>Q. オフラインで使えますか。</strong><br>A. 使えます。一度開けば通信のない場所でも起動・利用できます。通信するのは「🔄 更新確認」を押したときだけです。なお国試学習・〇×問題集・弁証/選穴支援は、初回のみデータの「取り込み」が必要です（取り込み後はオフライン可）。</p><p class="prose"><strong>Q. データは外部に送られますか。</strong><br>A. 学習履歴・カルテなどは端末内に保存され、外部のサーバーには送信されません。バックアップファイルもご自身の端末にダウンロードされるだけです。</p><p class="prose"><strong>Q. スマホでホーム画面に追加すると全画面になりますか。</strong><br>A. PWAとしてインストールして起動すると、できるだけ全画面で表示されます。端末によっては一部の枠が残ることがあります。</p><p class="prose"><strong>Q. 各アプリの詳しい使い方は？</strong><br>A. それぞれのアプリのヘッダーにある「📖 説明書」をご覧ください。</p>
+  <p class="prose"><strong>Q. オフラインで使えますか。</strong><br>A. 使えません。本アプリはオンライン専用です。接続のない環境では起動しても問題データを取得できません。</p><p class="prose"><strong>Q. 問題データや経穴データは端末に保存されますか。</strong><br>A. 保存されません。問題データ・経穴データは起動のたびにサーバーから取得します。学習履歴・カルテ・文字サイズ設定など、ユーザー固有の情報は端末内（ブラウザ）に保存されます。</p><p class="prose"><strong>Q. データは外部に送られますか。</strong><br>A. 学習履歴・カルテなどは端末内に保存され、外部のサーバーには送信されません。バックアップファイルもご自身の端末にダウンロードされるだけです。</p><p class="prose"><strong>Q. 更新はどうやって行いますか。</strong><br>A. 自動で行われます。起動時・ホーム復帰時・バックグラウンドから戻ったとき・10分ごとにバージョンを確認し、新しい版があれば自動で更新します。更新中でも開いているアプリ画面は可能な限り保持されます。</p><p class="prose"><strong>Q. スマホでホーム画面に追加すると全画面になりますか。</strong><br>A. PWAとしてインストールして起動すると、できるだけ全画面で表示されます。端末によっては一部の枠が残ることがあります。</p><p class="prose"><strong>Q. 各アプリの詳しい使い方は？</strong><br>A. それぞれのアプリのヘッダーにある「📖 説明書」をご覧ください。</p>
 </div></div>
 <footer>東洋医学 学習スイート ／ 東洋医学 <em>学習スイート</em><br>本スイートは個人学習用途を想定しています。再配布・商用利用は禁止されています。</footer></div></div><div class="section" id="h6"><div class="wrap">
   <div class="section-header"><div class="sec-num">06</div>
   <div class="section-header-text"><h2>PWAとしてインストール</h2><p>ホーム画面に追加してアプリのように使う</p></div></div>
-  <p class="prose">ブラウザでこのサイトを開いた状態で「ホーム画面に追加」すると、PWA（Progressive Web App）としてインストールできます。次回からアイコンをタップするだけで全画面で起動し、通信なしでも利用できます。</p>
+  <p class="prose">ブラウザでこのサイトを開いた状態で「ホーム画面に追加」すると、PWA（Progressive Web App）としてインストールできます。次回からアイコンをタップするだけで全画面で起動できます（オンライン接続が必要です）。</p>
   <p class="prose" style="margin-top:12px"><strong>iOS（iPhone / iPad）の場合</strong></p>
   <div class="steps"><div class="step"><div class="step-n">1</div><div class="step-body"><h4>Safariで開く</h4><p>このアプリはSafariでのインストールに対応しています。Chrome等では「ホーム画面に追加」が表示されない場合があります。</p></div></div><div class="step"><div class="step-n">2</div><div class="step-body"><h4>共有ボタンをタップ</h4><p>画面下部（またはアドレスバー付近）の <strong>□↑</strong>（共有）ボタンをタップします。</p></div></div><div class="step"><div class="step-n">3</div><div class="step-body"><h4>「ホーム画面に追加」を選ぶ</h4><p>メニューをスクロールして「ホーム画面に追加」をタップし、名前を確認して「追加」を押します。</p></div></div></div>
   <div class="callout callout-info" style="margin-top:12px"><div class="ico">&#9654;</div><div class="body"><h4>iOS インストール動画（YouTube）</h4><p><a href="https://www.youtube.com/watch?v=LmvoFrsnfSI&amp;t=43s" target="_blank" rel="noopener noreferrer" style="color:var(--primary);text-decoration:underline">https://www.youtube.com/watch?v=LmvoFrsnfSI&amp;t=43s</a></p></div></div>

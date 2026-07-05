@@ -170,13 +170,6 @@
   .home-foot{margin-top:26px;display:flex;align-items:center;justify-content:space-between;
     flex-wrap:wrap;gap:10px;padding-top:16px;border-top:1px dashed var(--line)}
   .ver{font-size:calc(11px*var(--fs));color:#8a7d63;letter-spacing:.04em}
-  .btn-upd{border:1px solid var(--line);background:#fff;color:var(--indigo);font:inherit;font-size:12px;
-    font-weight:700;padding:8px 14px;border-radius:9px;cursor:pointer;letter-spacing:.04em;
-    display:inline-flex;align-items:center;gap:6px;transition:.18s}
-  .btn-upd:hover{background:var(--paper2)}
-  .btn-upd.has-update{border-color:var(--cinnabar);color:var(--cinnabar);animation:blink 1.1s infinite}
-  @keyframes blink{50%{opacity:.45}}
-  .btn-upd.checking{opacity:.6;pointer-events:none}
   .credit{margin-top:16px;padding-top:14px;border-top:1px dashed var(--line);text-align:center;
     font-size:calc(11px*var(--fs));color:#8a7d63;line-height:1.7;letter-spacing:.02em}
   .credit-name{font-weight:500}
@@ -250,7 +243,7 @@
       <button class="btn-manual-home" onclick="window.open('./manual.html','_blank')" title="使用説明書">📖 説明書</button>
     </div>
   </div>
-  <p class="lead">学習したいアプリを選んでください。各アプリの学習データ・カルテはこれまで通り端末内に保存され、引き続き使えます。</p>
+  <p class="lead">学習したいアプリを選んでください。学習履歴・カルテなどはこれまで通り端末内に保存されます。問題・経穴データは毎回サーバーから取得します（オンライン接続が必要です）。</p>
 
   <div class="grid">
     <button class="card c-kokushi" onclick="openApp('kokushi')">
@@ -291,8 +284,7 @@
   </div>
 
   <div class="home-foot">
-    <span class="ver" id="verLabel">バージョン: 読み込み中…</span>
-    <button class="btn-upd" id="updBtn" onclick="checkUpdate()">🔄 更新確認</button>
+    <span class="ver" id="verLabel">バージョン: 確認中…</span>
   </div>
 
   <div class="backup-box">
@@ -387,6 +379,7 @@ function closeApp(){
   viewer.setAttribute('aria-hidden','true');
   document.querySelector('meta[name=theme-color]').setAttribute('content', '#b03a2e');
   currentApp = null;
+  autoCheckVersion(); // ホーム復帰時にバージョン確認→必要なら自動更新
 }
 
 // ===== 履歴・端末の「戻る」ボタン対策 =====
@@ -419,22 +412,13 @@ function routeFromHash(){
   if(APPS[key]) openApp(key, true);
 }
 
-// ===== バージョン管理（オフライン対応・更新は明示時のみ）=====
-//  方針：アプリ本体は Service Worker がキャッシュし、オフラインでも起動・利用できる。
-//   通信するのは「更新確認」ボタンを押したときだけ。
-//   version.json をネットで確認し、変化があれば全キャッシュを取り直して最新化する。
-//   ・起動時は最後に確認したバージョンを表示するだけ（通信しない）。
-//   ・自動のオンライン確認・オフラインロック画面は廃止。
-const updBtn   = document.getElementById('updBtn');
+// ===== バージョン管理（オンライン専用・自動確認）=====
+//  方針：起動時・ホーム復帰時に version.json を確認し、変化があれば自動更新。
+//   オフライン時は何も起こらない（ロックしない）。更新ボタンは廃止。
 const verLabel = document.getElementById('verLabel');
 let APP_VERSION = null;
 
-// 端末に保存：最後に確認できたバージョン（表示用）
-const LS_VER = 'suite_app_version';
-function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
-function lsSet(k,v){ try{ localStorage.setItem(k,String(v)); }catch(e){} }
-
-// version.json を必ずネットから取得（キャッシュ不可）。成功＝オンライン。
+// version.json を必ずネットから取得（キャッシュ不可）。
 async function fetchVersion(){
   try{
     const res = await fetch('./version.json?ts='+Date.now(), {cache:'no-store'});
@@ -444,58 +428,48 @@ async function fetchVersion(){
   }catch(e){ return null; }
 }
 
-// 完全リロード（更新適用後に呼ぶ）。URLハッシュ（例 #kokushi）は保持される。
+// 完全リロード（更新適用後に呼ぶ）。
 function reloadNow(){
   const u = new URL(location.href);
   u.searchParams.set('_r', Date.now());
   location.replace(u.toString());
 }
 
-// 起動時：保存済みバージョンを表示するだけ（通信しない＝オフラインでも起動可）
-function showStoredVersion(){
-  const v = lsGet(LS_VER);
-  APP_VERSION = v || null;
-  verLabel.textContent = 'バージョン: ' + (v || '（更新確認で取得）');
+// バージョン確認→必要なら自動更新（サイレント実行。アプリ起動中でも動作）
+// 更新後はリロード前の画面（開いていたアプリ）を可能な限り復元する。
+let _checking = false; // 二重確認防止
+async function autoCheckVersion(){
+  if(_checking) return;
+  _checking = true;
+  try{
+    const latest = await fetchVersion();
+    if(!latest){ _checking=false; return; } // オフライン時は何もしない
+    verLabel.textContent = 'バージョン: ' + latest;
+    if(APP_VERSION && latest !== APP_VERSION){
+      // 更新あり：開いているアプリをsessionStorageに保存してからリロード
+      showToastHome('新しいバージョン（'+latest+'）に更新します…');
+      if(currentApp) sessionStorage.setItem('restoreApp', currentApp);
+      sessionStorage.setItem('forceSwReload','1');
+      if(navigator.serviceWorker && navigator.serviceWorker.controller){
+        navigator.serviceWorker.controller.postMessage({type:'UPDATE_NOW'});
+      }else{
+        setTimeout(reloadNow, 800);
+      }
+      return; // リロード後はここには戻らない
+    }
+    APP_VERSION = latest;
+  }finally{
+    _checking = false;
+  }
 }
 
-// 手動「更新確認」：ここだけがネットに触れる。
-//  ・version.json を取得し、保存済みと違えば全キャッシュを取り直して最新へ。
-//  ・オフライン時はその旨だけ表示し、アプリはそのまま使える（ロックしない）。
-async function checkUpdate(){
-  if(!updBtn) return;
-  updBtn.classList.add('checking');
-  const orig = '🔄 更新確認';
-  updBtn.textContent = '確認中…';
-  const latest = await fetchVersion();
-  if(!latest){
-    updBtn.classList.remove('checking');
-    updBtn.textContent = '🔄 オフライン';
-    showToast('オフラインのため確認できませんでした。接続時にもう一度お試しください。');
-    setTimeout(()=>{ updBtn.textContent=orig; }, 2400);
-    return;
-  }
-  if(APP_VERSION && latest !== APP_VERSION){
-    updBtn.classList.remove('checking');
-    updBtn.classList.add('has-update');
-    updBtn.textContent = '更新中…';
-    showToast('新しいバージョン（'+latest+'）に更新します…');
-    lsSet(LS_VER, latest);
-    if(navigator.serviceWorker && navigator.serviceWorker.controller){
-      navigator.serviceWorker.controller.postMessage({type:'UPDATE_NOW'});
-    }else{
-      setTimeout(reloadNow, 600);
-    }
-  }else{
-    // 初回（保存バージョン無し）も含め、最新として記録
-    lsSet(LS_VER, latest);
-    APP_VERSION = latest;
-    verLabel.textContent = 'バージョン: ' + latest;
-    updBtn.classList.remove('checking');
-    updBtn.textContent = '🔄 最新です';
-    showToast('最新の状態です（'+latest+'）');
-    setTimeout(()=>{ updBtn.textContent=orig; }, 2400);
-  }
-}
+// バックグラウンド→フォアグラウンド復帰時・定期確認（アプリ起動中でも動作）
+document.addEventListener('visibilitychange', ()=>{
+  if(!document.hidden) autoCheckVersion();
+});
+
+// アプリ起動中の定期確認（10分ごと）
+setInterval(()=>{ if(!document.hidden) autoCheckVersion(); }, 30 * 60 * 1000);
 
 let toastT;
 function showToast(msg){
@@ -504,17 +478,29 @@ function showToast(msg){
   clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'), 3200);
 }
 
-// ===== Service Worker 登録 =====
+// ===== Service Worker 登録・更新制御 =====
 if('serviceWorker' in navigator){
+  // 制御SWが切り替わったとき、自動更新フロー時のみリロード
+  let _swReloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', ()=>{
+    if(_swReloaded) return;
+    if(sessionStorage.getItem('forceSwReload')==='1'){
+      _swReloaded = true;
+      sessionStorage.removeItem('forceSwReload');
+      reloadNow();
+    }
+  });
   window.addEventListener('load', ()=>{
     navigator.serviceWorker.register('./sw.js').catch(()=>{});
+    // SWからの更新完了通知でリロード
     navigator.serviceWorker.addEventListener('message', e=>{
-      if(e.data && e.data.type==='UPDATED'){ reloadNow(); }
+      if(e.data && e.data.type==='UPDATED'){
+        // forceSwReload・restoreAppはautoCheckVersionで設定済み
+        reloadNow();
+      }
     });
   });
 }
-
-// 自動のオンライン確認は行わない（更新は「更新確認」ボタンを押したときのみ）。
 
 // ===== 全アプリ一括バックアップ =====
 // 各アプリは同一オリジン配下のため、ホームから localStorage と IndexedDB に直接アクセスできる。
@@ -650,16 +636,24 @@ function showToastHome(msg){
 (function boot(){
   // ホームの土台となる履歴状態を1つ用意（戻るを吸収する受け皿）。
   try{ history.replaceState({ home:true }, '', location.href); }catch(e){}
+
+  // 更新リロード後の画面復元：sessionStorageに保存されていたアプリを開き直す
+  const restoreKey = sessionStorage.getItem('restoreApp');
+  if(restoreKey && APPS[restoreKey]){
+    sessionStorage.removeItem('restoreApp');
+    try{ history.pushState({ app:restoreKey }, '', '#'+restoreKey); }catch(e){}
+    openApp(restoreKey, true);
+  }
   // リロード復帰：URLにハッシュ（#kokushi 等）があれば、そのアプリを開き直す。
-  if(location.hash){
+  else if(location.hash){
     const key = location.hash.replace('#','');
     if(APPS[key]){
-      // 復帰時もアプリ状態を履歴に積む（戻る＝ホーム）。
       try{ history.pushState({ app:key }, '', '#'+key); }catch(e){}
       openApp(key, true);
     }
   }
-  showStoredVersion();
+
+  autoCheckVersion(); // 起動時にバージョン確認→必要なら自動更新
 })();
 </script>
 </body>

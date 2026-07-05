@@ -48,7 +48,7 @@
     neutralizeCaches();
 
     // 3) アプリ独自の「更新」ボタンを隠す（親の「更新確認」に一本化）
-    var css='[onclick="checkUpdate()"],#verLabel{display:none !important;}';
+    var css='[onclick="checkUpdate()"],#verLabel,#acu-import{display:none !important;}';
     function injectCss(){ try{ var s=document.createElement('style'); s.textContent=css; (document.head||document.documentElement).appendChild(s);}catch(e){} }
     if(document.head){ injectCss(); }
     else { document.addEventListener('DOMContentLoaded', injectCss); }
@@ -505,7 +505,7 @@ header .bar > button, .acu-scope header .bar .fs-ctrl{flex:0 0 auto}
   <div class="ver-row">
     <button class="btn-ghost mini" id="openEditBtn" onclick="openEditor()">⚙ データ編集・表示設定</button>
     <button class="btn-ghost mini" onclick="window.open('./manual.html','_blank')">📖 使用説明書</button>
-    <button class="btn-ghost mini" id="acu-import" title="経穴データを取り込む / 更新する" style="margin-left:auto">📥 経穴データ取り込み</button>
+
     <div class="fs-ctrl">
       <button class="fs-minus" id="fsMinus" title="文字を小さく" aria-label="文字を小さく">A−</button>
       <span class="fs-label" id="fsLabel">標準</span>
@@ -723,7 +723,7 @@ header .bar > button, .acu-scope header .bar .fs-ctrl{flex:0 0 auto}
       <p>上部のタブは「経穴検索」と「診察フロー」に分かれています。<b>① 主治症→経穴　② 経穴名→主治症</b>｜<b>③ 問診 → ④ 症状 → ⑤ 徒手検査 → ⑥ 弁証 → ⑦ カルテ</b>。各タブは自由に行き来でき、入力したデータはタブを移動しても保持されます。</p>
 
       <h3>① 主治症→経穴／② 経穴名→主治症（経穴検索）</h3>
-      <p>症状（主治症）から経穴を探す、または経穴名・読み（ふりがな）から主治症を調べます。使う前に「📥 経穴データ取り込み」から acupoints.json を取り込んでください（端末内に保存、オフライン可）。⑥弁証の治療穴をタップすると、同じデータからその経穴の主治症をポップアップ表示します。</p>
+      <p>症状（主治症）から経穴を探す、または経穴名・読み（ふりがな）から主治症を調べます。起動時に自動で経穴データを読み込みます。⑥弁証の治療穴をタップすると、同じデータからその経穴の主治症をポップアップ表示します。</p>
 
       <h3>① 問診</h3>
       <p>患者番号・氏名・来院日・予約/来院時間・主訴などを入力します。</p>
@@ -3037,151 +3037,39 @@ function buildSources(){
 function saveState(){try{localStorage.setItem("acu_state",JSON.stringify({terms,mode,src:[...srcOn]}));}catch(e){}}
 function loadState(){try{const s=JSON.parse(localStorage.getItem("acu_state")||"null");if(s){terms=s.terms||[];mode=s.mode||"and";if(s.src&&s.src.length)srcOn=new Set(s.src);}}catch(e){}}
 
-// ---- 経穴データの保存：IndexedDB（他アプリと統一・オフライン可）----
+// ---- 経穴データ：起動時にfetchで読み込む（IndexedDB保存なし）----
 //  検索条件(acu_state)と文字サイズは小さいUI状態なので localStorage のまま。
 //  経穴データ本体だけ IndexedDB に保存する。
-const ACU_DB = "AcupointSearchDB";
-let _acudb = null;
-function acuOpenDB(){
-  return new Promise((resolve,reject)=>{
-    const req=indexedDB.open(ACU_DB,1);
-    req.onupgradeneeded=(e)=>{
-      const db=e.target.result;
-      if(!db.objectStoreNames.contains("acuData")) db.createObjectStore("acuData",{keyPath:"key"});
-    };
-    req.onsuccess=()=>resolve(req.result);
-    req.onerror=()=>reject(req.error);
-  });
-}
-function acuGet(key){
-  return new Promise((resolve)=>{
-    try{
-      const tx=_acudb.transaction("acuData","readonly");
-      const r=tx.objectStore("acuData").get(key);
-      r.onsuccess=()=>resolve(r.result||null); r.onerror=()=>resolve(null);
-    }catch(e){ resolve(null); }
-  });
-}
-function acuPut(value){
-  return new Promise((resolve,reject)=>{
-    const tx=_acudb.transaction("acuData","readwrite");
-    const r=tx.objectStore("acuData").put(value);
-    r.onsuccess=()=>resolve(); r.onerror=()=>reject(r.error);
-  });
-}
+// IndexedDBは使用しない（オンライン専用：毎回サーバーからfetchする）
 
-// ---- データ読み込み（端末保存のみ・オフライン可）----
+// ---- データ読み込み（fetchのみ・端末保存なし）----
 //  取り込み済みデータ（IndexedDB）から読む。通信はしない。
 //  旧localStorage保存分があれば一度だけ IndexedDB へ移行する。
+// 起動時に同フォルダの acupoints.json を fetch で読み込む（端末には保存しない）
 async function loadData(){
   try{
-    if(!_acudb) _acudb = await acuOpenDB();
-    // 端末の保存をできるだけ消えにくくする（対応ブラウザのみ）
-    try{ if(navigator.storage && navigator.storage.persist){ await navigator.storage.persist(); } }catch(e){}
-
-    let rec = await acuGet("current");
-
-    // 旧localStorage（acu_data）からの移行（初回のみ）
-    if(!rec){
-      try{
-        const legacy=localStorage.getItem("acu_data");
-        if(legacy){
-          const arr=JSON.parse(legacy);
-          if(Array.isArray(arr)&&arr.length){
-            const t=localStorage.getItem("acu_data_time")||new Date().toISOString();
-            rec={key:"current",data:arr,importedAt:t};
-            await acuPut(rec);
-            try{ localStorage.removeItem("acu_data"); localStorage.removeItem("acu_data_time"); }catch(e){}
-          }
-        }
-      }catch(e){}
-    }
-
-    if(rec && Array.isArray(rec.data) && rec.data.length>0){
-      computeSourceOrder(rec.data);
-      DATA=rec.data.map(normalizeRecord).filter(Boolean);
-      buildSources();
-      showVer(rec.importedAt?new Date(rec.importedAt):null);
-      hideImportPrompt();
-      return true;
-    }
-  }catch(e){}
-  // 未取り込み
-  showImportPrompt();
-  return false;
-}
-function showVer(d){
-  const el=$("#ver"); if(!el) return;
-  const n=Array.isArray(DATA)?DATA.length:0;
-  el.textContent=`経穴データ取り込み済み（${n}件）／端末内に保存`;
-}
-
-// ファイル選択で acupoints.json を取り込む
-function importAcuFile(ev){
-  const file=ev&&ev.target&&ev.target.files&&ev.target.files[0];
-  if(!file)return;
-  const reader=new FileReader();
-  reader.onload=async()=>{
-    try{
-      const json=JSON.parse(reader.result);
-      // acupoints.json は配列。{acupoints:[...]} 形式にも一応対応。
-      const arr=Array.isArray(json)?json:(Array.isArray(json.acupoints)?json.acupoints:null);
-      if(!arr||arr.length===0){
-        alert("経穴データが見つかりませんでした。\nacupoints.json を選択してください。");
-        return;
-      }
-      if(!_acudb) _acudb = await acuOpenDB();
-      try{
-        await acuPut({key:"current",data:arr,importedAt:new Date().toISOString()});
-      }catch(e){ alert("保存に失敗しました: "+e.message); return; }
-      computeSourceOrder(arr);
-      DATA=arr.map(normalizeRecord).filter(Boolean);
-      buildSources();
-      showVer(new Date());
-      hideImportPrompt();
-      renderSrc();
-      renderMer();
-      run();
-      toast(DATA.length+"件の経穴データを取り込みました");
-    }catch(e){
-      alert("ファイルの読み込みに失敗しました: "+e.message);
-    }finally{
-      if(ev&&ev.target)ev.target.value="";
-    }
-  };
-  reader.readAsText(file);
-}
-function triggerAcuImport(){
-  let inp=document.getElementById("acu-import-file");
-  if(!inp){
-    inp=document.createElement("input");
-    inp.type="file"; inp.id="acu-import-file"; inp.accept="application/json,.json";
-    inp.style.display="none"; inp.onchange=importAcuFile;
-    document.body.appendChild(inp);
+    const res = await fetch('./acupoints.json?_=' + Date.now(), {cache:'no-store'});
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+    const arr = Array.isArray(json) ? json : (Array.isArray(json.acupoints) ? json.acupoints : null);
+    if(!arr || arr.length === 0) throw new Error('データが空です');
+    computeSourceOrder(arr);
+    DATA = arr.map(normalizeRecord).filter(Boolean);
+    buildSources();
+    const el = $("#ver");
+    if(el) el.textContent = `経穴データ（${DATA.length}件）`;
+    return true;
+  }catch(e){
+    console.error('acupoints.json の読み込みに失敗:', e.message);
+    // エラー表示
+    const errDiv = document.createElement('div');
+    errDiv.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px 24px;background:#f4efe4;font-family:sans-serif;color:#2c3e50;';
+    errDiv.innerHTML = '<div style="font-size:46px;margin-bottom:14px;">⚠️</div>' +
+      '<h2 style="margin-bottom:12px;font-size:20px;">経穴データを読み込めませんでした</h2>' +
+      '<p style="color:#7a8a99;line-height:1.8;max-width:30em;">acupoints.json が同フォルダに存在するか確認し、再度開いてください。</p>';
+    document.body.appendChild(errDiv);
+    return false;
   }
-  inp.click();
-}
-function showImportPrompt(){
-  let ov=document.getElementById("acu-import-prompt");
-  if(!ov){
-    ov=document.createElement("div");
-    ov.id="acu-import-prompt";
-    ov.style.cssText="position:fixed;inset:0;z-index:9000;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px 24px;background:#f4efe4;font-family:sans-serif;color:#2c3e50;";
-    ov.innerHTML=
-      '<div style="font-size:46px;margin-bottom:14px;">📥</div>'+
-      '<h2 style="margin-bottom:12px;font-size:20px;">経穴データを取り込んでください</h2>'+
-      '<p style="color:#7a8a99;line-height:1.8;max-width:30em;margin-bottom:20px;">'+
-      '初回のみ、配布された <b>acupoints.json</b> を取り込みます。<br>'+
-      '取り込んだデータは端末内に保存され、次回からはオフラインでも使えます。</p>'+
-      '<button id="acu-import-btn" style="border:none;background:#d9820a;color:#fff;font-size:15px;font-weight:700;padding:13px 26px;border-radius:11px;cursor:pointer;">📂 acupoints.json を選ぶ</button>';
-    document.body.appendChild(ov);
-    ov.querySelector("#acu-import-btn").onclick=triggerAcuImport;
-  }
-  ov.style.display="flex";
-}
-function hideImportPrompt(){
-  const ov=document.getElementById("acu-import-prompt");
-  if(ov)ov.style.display="none";
 }
 
 function renderTerms(){
@@ -3352,9 +3240,7 @@ const TTL={fwd:["主治症から経穴検索","SYMPTOM &nbsp;→&nbsp; ACUPOINT 
   });
 })();
 
-// 取り込みボタン（ヘッダーに配置）：ファイル選択でデータを取り込む
-const _impBtn=$("#acu-import");
-if(_impBtn) _impBtn.onclick=triggerAcuImport;
+// 取り込みボタンは廃止（起動時に自動fetch）
 
 async function acuInit(){
   loadState();
@@ -3380,7 +3266,7 @@ function openDetailByName(name){
   const body=document.getElementById('acuModalBody');
   if(!modal||!body) return false;
   if(!p){
-    body.innerHTML='<div class="acu-scope"><p style="padding:20px;text-align:center;color:var(--ink-soft)">「'+esc(name)+'」の経穴データが見つかりませんでした。<br><small>経穴データを取り込むと表示できます。</small></p></div>';
+    body.innerHTML='<div class="acu-scope"><p style="padding:20px;text-align:center;color:var(--ink-soft)">「'+esc(name)+'」の経穴データが見つかりませんでした。</p></div>';
   }else{
     const srcs=Object.entries(p.sources||{}).map(([s,v])=>
       `<div class="src"><div class="sname">${esc(displaySourceName(s))}</div><div class="stext">${esc(v)}</div></div>`).join('');
@@ -3427,6 +3313,51 @@ return { init:acuInit, openDetailByName, hasData, reload:loadData, run, runRev, 
     resultArea.addEventListener('click', e=>onAcuActivate(e.target));
     resultArea.addEventListener('keydown', e=>{ if((e.key==='Enter'||e.key===' ')&&onAcuActivate(e.target)) e.preventDefault(); });
   }
+})();
+
+
+// ===== 自動バージョン確認（直接起動時・バックグラウンド復帰時・30分ごと）=====
+// iframe内（統合ホーム経由）は親が管理するためスキップ。直接URLで開いた場合のみ動作。
+(function(){
+  if(window.top !== window.self) return;
+
+  let _cv = null;   // 確認済みバージョン
+  let _ck = false;  // 二重確認防止フラグ
+
+  async function _autoCheck(){
+    if(_ck) return;
+    _ck = true;
+    try{
+      const res = await fetch('./version.json?_=' + Date.now(), {cache:'no-store'});
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const j = await res.json();
+      const latest = j.version || null;
+      if(!latest){ _ck=false; return; }
+      if(_cv && latest !== _cv){
+        // バージョン変化→リロード（画面保持は直接起動なので考慮不要）
+        location.reload();
+        return;
+      }
+      _cv = latest;
+    }catch(e){
+      if(!_cv){
+        // 起動時に接続不可→オフラインエラー表示
+        document.body.innerHTML =
+          '<div style="position:fixed;inset:0;display:flex;flex-direction:column;' +
+          'align-items:center;justify-content:center;text-align:center;padding:32px;' +
+          'background:#f5f7fa;font-family:sans-serif;color:#2c3e50;">' +
+          '<div style="font-size:48px;margin-bottom:16px;">📶</div>' +
+          '<h2 style="margin-bottom:12px;">オンライン接続が必要です</h2>' +
+          '<p style="color:#7a8a99;">インターネットに接続してから再度お試しください。</p></div>';
+        return;
+      }
+      // 起動後の確認失敗はサイレントにスキップ
+    }finally{ _ck = false; }
+  }
+
+  _autoCheck(); // 起動時
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) _autoCheck(); }); // 復帰時
+  setInterval(()=>{ if(!document.hidden) _autoCheck(); }, 30 * 60 * 1000); // 30分ごと
 })();
 
 </script>

@@ -844,12 +844,7 @@
       <h2>問題データ</h2>
       <div id="setting-q-version" style="font-size:13px;color:#4a5a6a;margin-bottom:10px;">問題データ: —</div>
       <div class="setting-row">
-        <div>
-          <div class="lbl">問題データを取り込む / 更新する</div>
-          <div class="desc">配布された questions.json を選択（端末に保存・オフライン可）</div>
-        </div>
-        <button class="btn" onclick="reimportQuestionData()" style="padding: 8px 14px; font-size: 13px;">📥 取り込み</button>
-      </div>
+
     </div>
 
     <div class="card">
@@ -1033,74 +1028,28 @@ function normalizeQuestion(q, i) {
   };
 }
 
-// 問題データの読み込み：取り込み済みデータ（IndexedDB）から読む（オフライン可）。
-//  ・端末に取り込み済みなら、それを使う（通信しない）。
-//  ・未取り込みなら空のまま（init で取り込み案内を表示）。
+// 起動時に同フォルダの questions.json を fetch で読み込む（端末には保存しない）
 async function loadQuestionData() {
   try {
-    if (!db) return false;
-    const rec = await dbGet('questionData', 'current');
-    if (rec && Array.isArray(rec.questions) && rec.questions.length > 0) {
-      BUNDLED_QUESTIONS = rec.questions.map(normalizeQuestion);
-      QUESTION_DATA_VERSION = rec.questionDataVersion || null;
-      return true;
-    }
-    return false;
+    const res = await fetch('./questions.json?_=' + Date.now(), {cache: 'no-store'});
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+    const arr = json && json.questions;
+    if (!Array.isArray(arr) || arr.length === 0) throw new Error('データが空です');
+    BUNDLED_QUESTIONS = arr.map(normalizeQuestion);
+    QUESTION_DATA_VERSION = json.questionDataVersion || null;
+    return true;
   } catch (e) {
-    console.warn('問題データの読み込みに失敗:', e.message);
+    console.error('questions.json の読み込みに失敗:', e.message);
     return false;
   }
-}
-
-// 取り込んだ JSON を端末（IndexedDB）に保存する
-async function saveQuestionData(json) {
-  const questions = (json.questions || []);
-  await dbPut('questionData', {
-    key: 'current',
-    questions,
-    questionDataVersion: json.questionDataVersion || null,
-    importedAt: new Date().toISOString(),
-  });
-}
-
-// ファイル選択で問題データ（questions.json）を取り込む
-function importQuestionFile(ev) {
-  const file = ev && ev.target && ev.target.files && ev.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = async () => {
-    try {
-      const json = JSON.parse(reader.result);
-      const arr = json && json.questions;
-      if (!Array.isArray(arr) || arr.length === 0) {
-        alert('問題データが見つかりませんでした。\nquestions.json を選択してください。');
-        return;
-      }
-      await saveQuestionData(json);
-      BUNDLED_QUESTIONS = arr.map(normalizeQuestion);
-      QUESTION_DATA_VERSION = json.questionDataVersion || null;
-      state.questions = BUNDLED_QUESTIONS;
-      // バージョン表示を更新
-      const el = document.getElementById('data-version-label');
-      if (el) el.textContent = '問題データ: ver.' + (QUESTION_DATA_VERSION || '—') + '（' + BUNDLED_QUESTIONS.length + '問）';
-      if (typeof showToast === 'function') showToast(BUNDLED_QUESTIONS.length + '問を取り込みました', 2500);
-      // 取り込み案内が出ていれば通常画面へ復帰
-      if (typeof afterDataReady === 'function') afterDataReady();
-      else location.reload();
-    } catch (e) {
-      alert('ファイルの読み込みに失敗しました: ' + e.message);
-    } finally {
-      if (ev && ev.target) ev.target.value = '';
-    }
-  };
-  reader.readAsText(file);
 }
 
 //=========================================================
 
 //=========================================================
 const DB_NAME = 'StudyAppDB';
-const DB_VERSION = 5; // questionData ストア追加（取り込んだ問題データを端末保存）
+const DB_VERSION = 6; // questionData ストア廃止（毎回fetchのためIndexedDB不使用）
 let db = null;
 
 function openDB() {
@@ -1115,8 +1064,9 @@ function openDB() {
         d.deleteObjectStore('questions');
       }
       // 取り込んだ問題データ一式を1レコードで保存（key='current'）
-      if (!d.objectStoreNames.contains('questionData')) {
-        d.createObjectStore('questionData', { keyPath: 'key' });
+      // questionData は廃止（毎回fetchするためIndexedDB保存不要）
+      if (d.objectStoreNames.contains('questionData')) {
+        d.deleteObjectStore('questionData');
       }
       if (!d.objectStoreNames.contains('progress')) {
         d.createObjectStore('progress', { keyPath: 'questionId' });
@@ -1207,26 +1157,23 @@ const state = {
 //=========================================================
 async function init() {
   await openDB();
-  // 端末の保存をできるだけ消えにくくする（対応ブラウザのみ）
-  try{ if(navigator.storage && navigator.storage.persist){ await navigator.storage.persist(); } }catch(e){}
-
-  // 取り込み済みの問題データを端末から読み込む（オフライン可）
   const hasData = await loadQuestionData();
   if (!hasData || BUNDLED_QUESTIONS.length === 0) {
-    // 未取り込み：取り込み案内を表示（通信は不要）
-    showImportPrompt();
+    // questions.json が読み込めなかった場合はエラー表示
+    document.body.innerHTML = '<div style="position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px 24px;background:#f5f7fa;font-family:sans-serif;color:#2c3e50;">' +
+      '<div style="font-size:48px;margin-bottom:16px;">⚠️</div>' +
+      '<h2 style="margin-bottom:12px;">問題データを読み込めませんでした</h2>' +
+      '<p style="color:#7a8a99;">questions.json が同フォルダに存在するか確認し、再度開いてください。</p></div>';
     return;
   }
 
-  // 旧フォーマット検出：examOnly フィールドも「本試験モードのみに出題」フィールドも
-  // ない問題データが取り込まれている場合は再取り込みを促す
-  const rec = await dbGet('questionData', 'current');
-  if (rec && Array.isArray(rec.questions) && rec.questions.length > 0) {
-    const sample = rec.questions.find(q =>
+  // フォーマット確認（examOnlyフィールドチェック）
+  if (BUNDLED_QUESTIONS.length > 0) {
+    const sample = BUNDLED_QUESTIONS.find(q =>
       q['本試験モードのみに出題'] !== undefined || q.examOnly !== undefined
     );
     if (!sample) {
-      showToast('⚠️ 問題データが旧フォーマットです。設定から最新のJSONを再取り込みしてください。', 5000);
+      showToast('⚠️ 問題データが旧フォーマットです。questions.json を最新版に差し替えてください。', 5000);
     }
   }
 
@@ -1273,31 +1220,7 @@ async function afterDataReady() {
 }
 
 // 問題データ取り込み案内オーバーレイ
-function showImportPrompt() {
-  let ov = document.getElementById('import-prompt');
-  if (!ov) {
-    ov = document.createElement('div');
-    ov.id = 'import-prompt';
-    ov.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px 24px;background:#f4efe4;font-family:sans-serif;color:#2c3e50;';
-    ov.innerHTML =
-      '<div style="font-size:46px;margin-bottom:14px;">📥</div>' +
-      '<h2 style="margin-bottom:12px;font-size:20px;">問題データを取り込んでください</h2>' +
-      '<p style="color:#7a8a99;line-height:1.8;max-width:30em;margin-bottom:20px;">' +
-      '初回のみ、配布された <b>questions.json</b> を取り込みます。<br>' +
-      '取り込んだデータは端末内に保存され、次回からはオフラインでも使えます。</p>' +
-      '<button id="import-prompt-btn" style="border:none;background:#2c5f7c;color:#fff;font-size:15px;font-weight:700;padding:13px 26px;border-radius:11px;cursor:pointer;">📂 questions.json を選ぶ</button>' +
-      '<input type="file" id="import-prompt-file" accept="application/json,.json" style="display:none">' +
-      '<p style="color:#9aa;font-size:12px;margin-top:18px;">データはホーム画面の「データ取り込み」配布元から入手できます。</p>';
-    document.body.appendChild(ov);
-    ov.querySelector('#import-prompt-btn').onclick = () => ov.querySelector('#import-prompt-file').click();
-    ov.querySelector('#import-prompt-file').onchange = importQuestionFile;
-  }
-  ov.style.display = 'flex';
-}
-function hideImportPrompt() {
-  const ov = document.getElementById('import-prompt');
-  if (ov) ov.style.display = 'none';
-}
+// showImportPrompt / hideImportPrompt は廃止（fetch方式に移行）
 
 //=========================================================
 // 今日の演習モード
@@ -2962,16 +2885,14 @@ function goSettings() {
   if (appEl) {
     appEl.textContent = 'アプリ: ver.' + APP_VERSION;
   }
-  // 問題データバージョンを表示（取り込み済みデータ基準）
+  // 問題データバージョンを表示（fetch済みデータ基準）
   const el = document.getElementById('setting-q-version');
   if (el) {
-    dbGet('questionData', 'current').then(rec => {
-      if (rec && Array.isArray(rec.questions)) {
-        el.textContent = '問題データ: ver.' + (rec.questionDataVersion || '—') + '（' + rec.questions.length + '問）';
-      } else {
-        el.textContent = '問題データ: 未取り込み';
-      }
-    });
+    if (BUNDLED_QUESTIONS && BUNDLED_QUESTIONS.length > 0) {
+      el.textContent = '問題データ: ver.' + (QUESTION_DATA_VERSION || '—') + '（' + BUNDLED_QUESTIONS.length + '問）';
+    } else {
+      el.textContent = '問題データ: 読み込み中…';
+    }
   }
   showScreen('settings', '設定', '');
 }
@@ -2979,23 +2900,7 @@ function goSettings() {
 //=========================================================
 // 問題データの再取り込み（設定画面などから呼ぶ）
 //=========================================================
-function reimportQuestionData() {
-  let inp = document.getElementById('reimport-file');
-  if (!inp) {
-    inp = document.createElement('input');
-    inp.type = 'file';
-    inp.id = 'reimport-file';
-    inp.accept = 'application/json,.json';
-    inp.style.display = 'none';
-    inp.onchange = importQuestionFile;
-    document.body.appendChild(inp);
-  }
-  inp.click();
-}
-
-// 互換：旧「更新確認」関数は、データ再取り込みの導線に置き換え。
-async function performUpdateCheck() { reimportQuestionData(); }
-async function manualUpdateCheck() { reimportQuestionData(); }
+// reimportQuestionData / performUpdateCheck / manualUpdateCheck は廃止
 
 function openManual() {
   const modal = document.getElementById('manual-modal');
@@ -4058,6 +3963,51 @@ init().catch(err => {
   console.error(err);
   alert('初期化エラー: ' + err.message);
 });
+
+// ===== 自動バージョン確認（直接起動時・バックグラウンド復帰時・30分ごと）=====
+// iframe内（統合ホーム経由）は親が管理するためスキップ。直接URLで開いた場合のみ動作。
+(function(){
+  if(window.top !== window.self) return;
+
+  let _cv = null;   // 確認済みバージョン
+  let _ck = false;  // 二重確認防止フラグ
+
+  async function _autoCheck(){
+    if(_ck) return;
+    _ck = true;
+    try{
+      const res = await fetch('./version.json?_=' + Date.now(), {cache:'no-store'});
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const j = await res.json();
+      const latest = j.version || null;
+      if(!latest){ _ck=false; return; }
+      if(_cv && latest !== _cv){
+        // バージョン変化→リロード（画面保持は直接起動なので考慮不要）
+        location.reload();
+        return;
+      }
+      _cv = latest;
+    }catch(e){
+      if(!_cv){
+        // 起動時に接続不可→オフラインエラー表示
+        document.body.innerHTML =
+          '<div style="position:fixed;inset:0;display:flex;flex-direction:column;' +
+          'align-items:center;justify-content:center;text-align:center;padding:32px;' +
+          'background:#f5f7fa;font-family:sans-serif;color:#2c3e50;">' +
+          '<div style="font-size:48px;margin-bottom:16px;">📶</div>' +
+          '<h2 style="margin-bottom:12px;">オンライン接続が必要です</h2>' +
+          '<p style="color:#7a8a99;">インターネットに接続してから再度お試しください。</p></div>';
+        return;
+      }
+      // 起動後の確認失敗はサイレントにスキップ
+    }finally{ _ck = false; }
+  }
+
+  _autoCheck(); // 起動時
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) _autoCheck(); }); // 復帰時
+  setInterval(()=>{ if(!document.hidden) _autoCheck(); }, 30 * 60 * 1000); // 30分ごと
+})();
+
 </script>
 </body>
 </html>

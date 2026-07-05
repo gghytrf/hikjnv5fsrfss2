@@ -3760,7 +3760,51 @@ if(updBtn) updBtn.onclick=forceUpdate;
 
 // Service Worker 登録は統合ホーム（index.html）が一元管理するため省略
 
-loadVersion().then(()=>{ setTimeout(checkForUpdate, 1500); });
+// loadVersion/checkForUpdate は autoCheck に統合
+
+// ===== 自動バージョン確認（直接起動時・バックグラウンド復帰時・30分ごと）=====
+// iframe内（統合ホーム経由）は親が管理するためスキップ。直接URLで開いた場合のみ動作。
+(function(){
+  if(window.top !== window.self) return;
+
+  let _cv = null;   // 確認済みバージョン
+  let _ck = false;  // 二重確認防止フラグ
+
+  async function _autoCheck(){
+    if(_ck) return;
+    _ck = true;
+    try{
+      const res = await fetch('./version.json?_=' + Date.now(), {cache:'no-store'});
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const j = await res.json();
+      const latest = j.version || null;
+      if(!latest){ _ck=false; return; }
+      if(_cv && latest !== _cv){
+        // バージョン変化→リロード（画面保持は直接起動なので考慮不要）
+        location.reload();
+        return;
+      }
+      _cv = latest;
+    }catch(e){
+      if(!_cv){
+        // 起動時に接続不可→オフラインエラー表示
+        document.body.innerHTML =
+          '<div style="position:fixed;inset:0;display:flex;flex-direction:column;' +
+          'align-items:center;justify-content:center;text-align:center;padding:32px;' +
+          'background:#f5f7fa;font-family:sans-serif;color:#2c3e50;">' +
+          '<div style="font-size:48px;margin-bottom:16px;">📶</div>' +
+          '<h2 style="margin-bottom:12px;">オンライン接続が必要です</h2>' +
+          '<p style="color:#7a8a99;">インターネットに接続してから再度お試しください。</p></div>';
+        return;
+      }
+      // 起動後の確認失敗はサイレントにスキップ
+    }finally{ _ck = false; }
+  }
+
+  _autoCheck(); // 起動時
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) _autoCheck(); }); // 復帰時
+  setInterval(()=>{ if(!document.hidden) _autoCheck(); }, 30 * 60 * 1000); // 30分ごと
+})();
 </script>
 </body>
 </html>

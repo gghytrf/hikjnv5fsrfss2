@@ -355,10 +355,10 @@
       <div id="mb-data-info" style="font-size:calc(13px*var(--fs));color:var(--sub);margin-bottom:10px;">問題データ: —</div>
       <div class="setting-row">
         <div>
-          <div class="lbl">問題データを取り込む / 更新する</div>
-          <div class="desc">配布された marubatsu_questions.json を選択（端末に保存・オフライン可）</div>
+          <div class="lbl">問題データについて</div>
+          <div class="desc">起動時に自動で marubatsu_questions.json を読み込みます（オンライン接続必須）</div>
         </div>
-        <button class="btn" onclick="mbReimport()">📥 取り込み</button>
+
       </div>
     </div>
     <div class="card">
@@ -472,8 +472,8 @@ async function saveProgress(qid, isCorrect){
 }
 
 /* ====== データ読み込み ======
-   ・問題データは「取り込み」で端末（IndexedDB）に保存する（オフライン可）。
-   ・通信は一切しない。データ更新はファイルの再取り込みで行う。 */
+   ・問題データは起動時に marubatsu_questions.json を fetch する（端末に保存しない）。
+   ・学習履歴（progress）は引き続き IndexedDB に保存する。 */
 const MB_DB = 'MarubatsuDB';
 let _mbdb = null;
 
@@ -486,7 +486,8 @@ function mbOpenDB(){
       if(db.objectStoreNames.contains('questions')) db.deleteObjectStore('questions');
       if(!db.objectStoreNames.contains('meta')) db.createObjectStore('meta', { keyPath:'key' });
       if(!db.objectStoreNames.contains('progress')) db.createObjectStore('progress', { keyPath:'questionId' });
-      if(!db.objectStoreNames.contains('questionData')) db.createObjectStore('questionData', { keyPath:'key' });
+      // questionData は廃止（毎回fetchするためIndexedDB保存不要）
+      if(db.objectStoreNames.contains('questionData')) db.deleteObjectStore('questionData');
     };
     req.onsuccess = ()=>resolve(req.result);
     req.onerror = ()=>reject(req.error);
@@ -512,89 +513,27 @@ function mbPut(store, value){
   });
 }
 
-// 取り込み済みの問題データを端末から読み込む（オフライン可）
+// 起動時に同フォルダの marubatsu_questions.json を fetch で読み込む（端末には保存しない）
 async function mbLoadQuestions(){
   try{
-    const rec = await mbGet('questionData', 'current');
-    if(rec && Array.isArray(rec.questions) && rec.questions.length>0){
-      ALL = rec.questions;
-      MB_DATA_VERSION = rec.questionDataVersion || rec.version || null;
-      return true;
-    }
+    const res = await fetch('./marubatsu_questions.json?_=' + Date.now(), {cache:'no-store'});
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+    const arr = json && json.questions;
+    if(!Array.isArray(arr) || arr.length === 0) throw new Error('データが空です');
+    ALL = arr;
+    MB_DATA_VERSION = (json && json.questionDataVersion) || (json && json.version) || null;
+    return true;
+  }catch(e){
+    console.error('marubatsu_questions.json の読み込みに失敗:', e.message);
     return false;
-  }catch(e){ console.warn('問題データ読み込み失敗:', e.message); return false; }
+  }
 }
 
-// ファイル選択で marubatsu_questions.json を取り込む
-function mbImportFile(ev){
-  const file = ev && ev.target && ev.target.files && ev.target.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = async ()=>{
-    try{
-      const json = JSON.parse(reader.result);
-      const arr = json && json.questions;
-      if(!Array.isArray(arr) || arr.length===0){
-        alert('問題データが見つかりませんでした。\nmarubatsu_questions.json を選択してください。');
-        return;
-      }
-      await mbPut('questionData', { key:'current', questions:arr, questionDataVersion:(json && json.questionDataVersion) || (json && json.version) || null, importedAt:new Date().toISOString() });
-      ALL = arr;
-      MB_DATA_VERSION = (json && json.questionDataVersion) || (json && json.version) || null;
-      mbHideImportPrompt();
-      buildFilters();
-      refreshHome();
-      toast(arr.length + '問を取り込みました');
-    }catch(e){
-      alert('ファイルの読み込みに失敗しました: '+e.message);
-    }finally{
-      if(ev && ev.target) ev.target.value='';
-    }
-  };
-  reader.readAsText(file);
-}
-
-// 取り込み案内オーバーレイ
-function mbShowImportPrompt(){
-  let ov = document.getElementById('mb-import-prompt');
-  if(!ov){
-    ov = document.createElement('div');
-    ov.id = 'mb-import-prompt';
-    ov.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px 24px;background:#f4efe4;font-family:sans-serif;color:#2c3e50;';
-    ov.innerHTML =
-      '<div style="font-size:46px;margin-bottom:14px;">📥</div>' +
-      '<h2 style="margin-bottom:12px;font-size:20px;">問題データを取り込んでください</h2>' +
-      '<p style="color:#7a8a99;line-height:1.8;max-width:30em;margin-bottom:20px;">' +
-      '初回のみ、配布された <b>marubatsu_questions.json</b> を取り込みます。<br>' +
-      '取り込んだデータは端末内に保存され、次回からはオフラインでも使えます。</p>' +
-      '<button id="mb-import-btn" style="border:none;background:#1f6e7a;color:#fff;font-size:15px;font-weight:700;padding:13px 26px;border-radius:11px;cursor:pointer;">📂 marubatsu_questions.json を選ぶ</button>' +
-      '<input type="file" id="mb-import-file" accept="application/json,.json" style="display:none">';
-    document.body.appendChild(ov);
-    ov.querySelector('#mb-import-btn').onclick = ()=> ov.querySelector('#mb-import-file').click();
-    ov.querySelector('#mb-import-file').onchange = mbImportFile;
-  }
-  ov.style.display = 'flex';
-}
-function mbHideImportPrompt(){
-  const ov = document.getElementById('mb-import-prompt');
-  if(ov) ov.style.display = 'none';
-}
-// 設定などからの再取り込み導線
-function mbReimport(){
-  let inp = document.getElementById('mb-reimport-file');
-  if(!inp){
-    inp = document.createElement('input');
-    inp.type='file'; inp.id='mb-reimport-file'; inp.accept='application/json,.json';
-    inp.style.display='none'; inp.onchange = mbImportFile;
-    document.body.appendChild(inp);
-  }
-  inp.click();
-}
+// mbShowImportPrompt / mbHideImportPrompt / mbReimport は廃止（fetch方式に移行）
 
 async function loadData(){
   _mbdb = await mbOpenDB();
-  // 端末の保存をできるだけ消えにくくする（対応ブラウザのみ）
-  try{ if(navigator.storage && navigator.storage.persist){ await navigator.storage.persist(); } }catch(e){}
   await loadProgressAll();
   // 除外年度を読み込む
   try{
@@ -603,8 +542,10 @@ async function loadData(){
   }catch(e){ MB_EXCLUDE_YEARS = []; }
   const ok = await mbLoadQuestions();
   if(!ok || ALL.length === 0){
-    // 未取り込み：取り込み案内を表示（通信不要）
-    mbShowImportPrompt();
+    document.body.innerHTML = '<div style="position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px 24px;background:#f5f7fa;font-family:sans-serif;color:#2c3e50;">' +
+      '<div style="font-size:48px;margin-bottom:16px;">⚠️</div>' +
+      '<h2 style="margin-bottom:12px;">問題データを読み込めませんでした</h2>' +
+      '<p style="color:#7a8a99;">marubatsu_questions.json が同フォルダに存在するか確認し、再度開いてください。</p></div>';
     return;
   }
   buildFilters();
@@ -648,7 +589,7 @@ function openStats(){ refreshStats(); showScreen('stats'); }
 function openSettings(){
   showScreen('settings');
   const el = document.getElementById('mb-data-info');
-  if(el) el.textContent = '問題データ: ' + (ALL && ALL.length ? ('ver.' + (MB_DATA_VERSION || '—') + '（' + ALL.length + '問）') : '未取り込み');
+  if(el) el.textContent = '問題データ: ' + (ALL && ALL.length ? ('ver.' + (MB_DATA_VERSION || '—') + '（' + ALL.length + '問）') : '読み込み中…');
   mbRenderYearList();
 }
 function goSubjectSelect(){ showScreen('subjects'); }
@@ -966,6 +907,51 @@ function toast(msg){
 
 /* ====== 起動 ====== */
 loadData();
+
+// ===== 自動バージョン確認（直接起動時・バックグラウンド復帰時・30分ごと）=====
+// iframe内（統合ホーム経由）は親が管理するためスキップ。直接URLで開いた場合のみ動作。
+(function(){
+  if(window.top !== window.self) return;
+
+  let _cv = null;   // 確認済みバージョン
+  let _ck = false;  // 二重確認防止フラグ
+
+  async function _autoCheck(){
+    if(_ck) return;
+    _ck = true;
+    try{
+      const res = await fetch('./version.json?_=' + Date.now(), {cache:'no-store'});
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const j = await res.json();
+      const latest = j.version || null;
+      if(!latest){ _ck=false; return; }
+      if(_cv && latest !== _cv){
+        // バージョン変化→リロード（画面保持は直接起動なので考慮不要）
+        location.reload();
+        return;
+      }
+      _cv = latest;
+    }catch(e){
+      if(!_cv){
+        // 起動時に接続不可→オフラインエラー表示
+        document.body.innerHTML =
+          '<div style="position:fixed;inset:0;display:flex;flex-direction:column;' +
+          'align-items:center;justify-content:center;text-align:center;padding:32px;' +
+          'background:#f5f7fa;font-family:sans-serif;color:#2c3e50;">' +
+          '<div style="font-size:48px;margin-bottom:16px;">📶</div>' +
+          '<h2 style="margin-bottom:12px;">オンライン接続が必要です</h2>' +
+          '<p style="color:#7a8a99;">インターネットに接続してから再度お試しください。</p></div>';
+        return;
+      }
+      // 起動後の確認失敗はサイレントにスキップ
+    }finally{ _ck = false; }
+  }
+
+  _autoCheck(); // 起動時
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) _autoCheck(); }); // 復帰時
+  setInterval(()=>{ if(!document.hidden) _autoCheck(); }, 30 * 60 * 1000); // 30分ごと
+})();
+
 </script>
 </body>
 </html>
