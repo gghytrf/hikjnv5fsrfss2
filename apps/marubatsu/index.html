@@ -532,6 +532,128 @@ async function mbLoadQuestions(){
 
 // mbShowImportPrompt / mbHideImportPrompt / mbReimport は廃止（fetch方式に移行）
 
+//=========================================================
+// 学習データ自動送信（GAS Webアプリへ）
+//=========================================================
+// ↓ GASのウェブアプリをデプロイして発行されたURLに置き換えてください
+//   (kokushiアプリと同じURLでOK。appフィールドで区別されます)
+const SYNC_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyUuD4I3pZS9yR5iHwwTRrsKuzF5cAvuYb7Zu-QehmqRTkNAct2RGWhCmWg8ovDkvmX/exec';
+const SYNC_APP_ID = 'marubatsu';
+const SYNC_INITIAL_META_KEY = 'syncInitialDone';
+
+// 端末ID（UUID）：ホーム画面(index.html)側と同じキーを使い、未生成なら自分で生成する
+const DEVICE_ID_KEY = 'suite_device_uuid';
+function getOrCreateDeviceId() {
+  try {
+    let id = localStorage.getItem(DEVICE_ID_KEY);
+    if (id) return id;
+    id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : (function(){
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c){
+        const r = Math.random()*16|0, v = c==='x' ? r : (r&0x3|0x8);
+        return v.toString(16);
+      });
+    })();
+    localStorage.setItem(DEVICE_ID_KEY, id);
+    return id;
+  } catch (e) { return 'unknown-device'; }
+}
+
+function getStudentInfo() {
+  let studentNo = '';
+  try {
+    const raw = localStorage.getItem('suite_student_info');
+    if (raw) {
+      const o = JSON.parse(raw);
+      studentNo = o.studentNo || '';
+    }
+  } catch (e) {}
+  return { studentNo, deviceId: getOrCreateDeviceId() };
+}
+
+async function isInitialSyncDone() {
+  try {
+    const rec = await mbGet('meta', SYNC_INITIAL_META_KEY);
+    return !!(rec && rec.value);
+  } catch (e) { return false; }
+}
+async function markInitialSyncDone() {
+  try { await mbPut('meta', { key: SYNC_INITIAL_META_KEY, value: true }); } catch (e) {}
+}
+
+//=========================================================
+// 送信キュー（オフライン・送信失敗時に備えた再送のしくみ）
+//=========================================================
+const SYNC_QUEUE_KEY = 'sync_queue_marubatsu';
+
+function loadSyncQueue() {
+  try { return JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || '[]'); } catch (e) { return []; }
+}
+function saveSyncQueue(q) {
+  try { localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(q)); } catch (e) {}
+}
+
+function enqueueSync(payload) {
+  if (!SYNC_ENDPOINT || SYNC_ENDPOINT.indexOf('★') !== -1) return; // 未設定時は何もしない
+  const student = getStudentInfo();
+  const record = Object.assign({
+    app: SYNC_APP_ID,
+    studentNo: student.studentNo,
+    deviceId: student.deviceId,
+    sentAt: new Date().toISOString()
+  }, payload);
+  const q = loadSyncQueue();
+  q.push(record);
+  saveSyncQueue(q);
+  flushSyncQueue();
+}
+
+let _flushingSyncQueue = false;
+// mode:'no-cors'のためサーバ側の成否は判定できないが、fetch自体がエラーを投げなければ
+// 「ネットワークへは送出できた」とみなして次に進む。オフライン等でfetchが失敗したら
+// そこで中断し、残りは次回（アプリ起動時・オンライン復帰時・次の解答時）に持ち越す。
+async function flushSyncQueue() {
+  if (_flushingSyncQueue) return;
+  if (!SYNC_ENDPOINT || SYNC_ENDPOINT.indexOf('★') !== -1) return;
+  if (!navigator.onLine) return;
+  _flushingSyncQueue = true;
+  try {
+    let q = loadSyncQueue();
+    while (q.length > 0) {
+      const rec = q[0];
+      try {
+        await fetch(SYNC_ENDPOINT, {
+          method: 'POST', mode: 'no-cors', keepalive: true,
+          headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(rec)
+        });
+        if (rec.type === 'full') await markInitialSyncDone();
+        q.shift();
+        saveSyncQueue(q);
+      } catch (e) {
+        break;
+      }
+    }
+  } finally {
+    _flushingSyncQueue = false;
+  }
+}
+window.addEventListener('online', flushSyncQueue);
+
+// 初回のみ：これまでの全進捗データをまとめて送信
+async function syncFullData() {
+  const progressList = await pgGetAll();
+  enqueueSync({ type: 'full', progress: progressList });
+  // ※初回完了フラグは実際に送信できた時点(flushSyncQueue内)で立てる（オフライン時の事故防止）
+}
+
+// 1問解いた直後に呼ぶ（初回は全データ送信に切り替わり、以降は差分のみ）
+async function syncOneAnswer(qid) {
+  try {
+    const done = await isInitialSyncDone();
+    if (!done) { await syncFullData(); return; }
+    enqueueSync({ type: 'answer', progress: PROGRESS[qid] || null });
+  } catch (e) { console.error('sync(answer)エラー:', e); }
+}
+
 async function loadData(){
   // 読み込み中オーバーレイ表示
   (function(){
@@ -562,6 +684,7 @@ async function loadData(){
   if(_ov) _ov.remove();
   buildFilters();
   refreshHome();
+  flushSyncQueue(); // 前回送りきれなかった学習データがあれば再送を試みる
 }
 
 // 自動のオンライン確認は行わない（データは取り込み済み・オフラインで動作）。
@@ -727,7 +850,7 @@ function answer(choice){
 
   session.answered++;
   if(correct){ session.correct++; } else { session.wrong++; }
-  saveProgress(q.id, correct); // 忘却曲線を更新
+  saveProgress(q.id, correct).then(() => syncOneAnswer(q.id)); // 忘却曲線を更新 → 送信
 
   if(session.idx >= session.queue.length-1){ document.getElementById('next-btn').textContent='結果を見る'; }
 }
