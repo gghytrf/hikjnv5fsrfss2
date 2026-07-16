@@ -398,16 +398,25 @@
   table.level-tbl thead th{background:var(--indigo);color:var(--paper);font-family:'Shippori Mincho',serif;font-weight:700;position:sticky;top:0}
   table.level-tbl th.lh,table.level-tbl td.lh{background:var(--paper2);color:var(--indigo);font-weight:700;position:sticky;left:0;z-index:1;min-width:88px}
   table.level-tbl thead th.lh{background:var(--indigo);color:var(--paper);z-index:2}
-  table.level-tbl td.lcell{cursor:pointer;background:var(--paper);font-family:'Shippori Mincho',serif}
+  /* 2列目以降の見出し列（頭部表の「後髪際からの距離」「取穴の目安」など）：固定はしない */
+  table.level-tbl th.lh2,table.level-tbl td.lh2{background:var(--paper2);color:var(--indigo);font-weight:700;min-width:80px}
+  table.level-tbl thead th.lh2{background:var(--indigo);color:var(--paper)}
+  table.level-tbl td.lcell{cursor:pointer;background:var(--paper);font-family:'Shippori Mincho',serif;transition:background .15s}
+  /* ？と経穴名をグリッドで重ねて配置→開示しても高さ不変（脳神経表と同方式） */
+  table.level-tbl td.lcell .lbox{display:grid;place-items:center;height:100%;min-height:calc(30px*var(--fs));padding:4px 3px;box-sizing:border-box;text-align:center}
+  table.level-tbl td.lcell .lbox .lq,table.level-tbl td.lcell .lbox .lval{grid-area:1/1;width:100%}
   table.level-tbl td.lcell .lq{color:var(--gold,#c79a4b);font-weight:700}
+  table.level-tbl td.lcell .lval{visibility:hidden}
+  table.level-tbl td.lcell.shown .lq{visibility:hidden}
+  table.level-tbl td.lcell.shown .lval{visibility:visible}
   table.level-tbl td.lcell.shown{background:var(--indigo);color:var(--paper)}
   table.level-tbl td.lempty{background:#f3eee2}
   table.level-tbl td.lcell .lname{display:block;line-height:1.2}
-  table.level-tbl td.lcell .lsub{display:block;font-size:calc(9px*var(--fs));font-weight:400;opacity:.85;font-family:'Zen Kaku Gothic New';margin-top:2px}
+  table.level-tbl td.lcell .lsub{display:block;font-size:calc(9px*var(--fs));font-weight:400;opacity:.85;font-family:'Zen Kaku Gothic New';margin-top:2px;white-space:normal;line-height:1.3}
   .level-notes{margin-top:10px;font-size:calc(11px*var(--fs));color:#8a7d63;line-height:1.8}
   .level-notes div{margin:2px 0}
-  table.level-tbl th .lsub2,table.level-tbl td.lh .lsub2{display:block;font-size:calc(9px*var(--fs));font-weight:400;opacity:.9;font-family:'Zen Kaku Gothic New';margin-top:1px}
-  table.level-tbl td.lh.lh-sm{font-size:calc(10px*var(--fs));line-height:1.25}
+  table.level-tbl th .lsub2,table.level-tbl td.lh .lsub2,table.level-tbl td.lh2 .lsub2{display:block;font-size:calc(9px*var(--fs));font-weight:400;opacity:.9;font-family:'Zen Kaku Gothic New';margin-top:1px}
+  table.level-tbl td.lh.lh-sm,table.level-tbl td.lh2.lh-sm{font-size:calc(10px*var(--fs));line-height:1.25}
   /* 体表指標列（背部の最終列）は文字を小さめに */
   table.level-tbl tr td.lcell:last-child{font-size:calc(10px*var(--fs));line-height:1.3;white-space:normal}
   .mrow{display:grid;grid-template-columns:84px 1fr;border-bottom:1px solid var(--line);cursor:pointer;transition:background .15s;min-height:var(--mrow-h)}
@@ -611,7 +620,8 @@
     <section class="panel" id="t8">
       <p class="hint">高さ（行）×正中線からの距離（列）で経穴を整理した表です。セルを<b>タップ</b>で <b>？</b>↔経穴名を切替。見出しの一括ボタンで全表示。</p>
       <div class="level-switch" id="levelSwitch">
-        <button class="on" data-lv="chest">胸腹部（前面）</button>
+        <button class="on" data-lv="head">頭部</button>
+        <button data-lv="chest">胸腹部（前面）</button>
         <button data-lv="back">背部（後面）</button>
       </div>
       <div class="ryaku-ctrl" style="margin:10px 0;">
@@ -3047,6 +3057,40 @@ const kpVeinData=[
   {name:'内頸静脈',pts:'扶突(LI18)'}
 ];
 
+/* ===================== 高さ別 経穴表 ===================== */
+/* 原表の結合セルは、下側の行に MERGE_UP('^') を置くと上のセルが rowspan で結合される */
+const MERGE_UP='^';
+/* 頭部（前髪際・後髪際からの距離 × 正中線からの距離） */
+const levelHead={title:'頭部の経穴（横並び）',lh:3,lhsm:false,
+  cols:['前髪際\nからの距離','後髪際\nからの距離','取穴の目安','正中線','前頭切痕','1寸5分','瞳孔線上','3寸','4寸5分'],
+  notes:['※前髪際中点〜後髪際中点＝1尺2寸（前髪際からの距離＋後髪際からの距離＝12）','※奇)四神聡は百会の前後左右各1寸の4穴'],
+  rows:[
+  ['前0.5','後11.5','前髪際\n後方5分','神庭(督)','眉衝(膀)','曲差(膀)','頭臨泣(胆)','本神(胆)','頭維(胃)'],
+  ['前1','後11','前髪際\n後方1寸','上星(督)','','五処(膀)','','',''],
+  ['前1.5','後10.5','前髪際\n後方1寸5分','','','','目窓(胆)','',''],
+  ['前2','後10','前髪際\n後方2寸','顖会(督)\n大泉門','','','','',''],
+  ['前2.5','後9.5','前髪際\n後方2寸5分','','','承光(膀)','正営(胆)','',''],
+  ['前3','後9','','','','','','',''],
+  ['前3.5','後8.5','前髪際\n後方3寸5分','前頂(督)','','','','',''],
+  ['前4','後8','前髪際\n後方4寸','奇)四神聡\n前方1寸','','通天(膀)','承霊(胆)','',''],
+  ['前4.5','後7.5','','','','','','',''],
+  ['前5','後7','前髪際\n後方5寸','百会(督)','奇)四神聡\n外方1寸','','','',''],
+  ['前5.5','後6.5','前髪際\n後方5寸5分','','','絡却(膀)','','',''],
+  ['前6','後6','','奇)四神聡\n後方1寸','','','','',''],
+  ['前6.5','後5.5','後髪際\n上方5寸5分','後頂(督)','','','','',''],
+  ['前7','後5','','','','','','',''],
+  ['前7.5','後4.5','','','','','','',''],
+  ['前8','後4','後髪際\n上方4寸','強間(督)\n小泉門','','','','',''],
+  ['前8.5','後3.5','','','','','','',''],
+  ['前9','後3','','','','','','',''],
+  ['前9.5','後2.5','外後頭隆起\n直上','脳戸(督)','','玉枕(膀)\n1寸3分','脳空(胆)','',''],
+  ['前10','後2','','','','','','',''],
+  ['前10.5','後1.5','','','','','','',''],
+  ['前11','後1','外後頭隆起\n直下','風府(督)','','','風池(胆)\n胸鎖乳突筋と僧帽筋の間','','完骨(胆)\n乳様突起後下方'],
+  ['前11.5','後0.5','C2上方','瘂門(督)\n項窩ほぼ中央','','天柱(膀)\n僧帽筋外縁','','',MERGE_UP],
+  ['前12','後0','後髪際','','','','','','']
+]};
+
 const levelChest={title:'胸腹部の経穴（横並び・前面）',cols:['高さ・横','正中線','0.5寸','2寸','2.5〜3寸','4寸\n(乳頭線)','5寸','6寸','7寸','8寸\n(中腋窩線)'],notes:['※1：府舎の内下方','※2：第11肋骨端は中腋窩線よりも前','※3：上前腸骨棘の前方'],rows:[
   ['鎖骨下縁','璇璣(任)','','兪府(腎)','','気戸(胃)','','雲門(肺)','',''],
   ['第1肋間','華蓋(任)','','彧中(腎)','','庫房(胃)','','中府(肺)','',''],
@@ -3115,19 +3159,29 @@ function renderKpArtery(){ renderVesselList('arteryArea', kpArteryData); }
 function renderKpVein(){ renderVesselList('veinArea', kpVeinData); }
 function renderKpNerve(){ renderVesselList('kpNerveArea', kpNerveData); }
 
-/* ===================== 高さ別 経穴表 ===================== */
-let curLevel='chest';
+/* ===================== 高さ別 描画 ===================== */
+const LEVEL_TABLES={head:levelHead,chest:levelChest,back:levelBack};
+let curLevel='head';
 function renderLevel(){
-  const t = curLevel==='chest'?levelChest:levelBack;
+  const t = LEVEL_TABLES[curLevel]||levelChest;
+  const nlh = t.lh||1;
+  const useSm = t.lhsm!==false;
   const hcell=(v)=>{ const p=String(v).split('\n'); return p[0]+(p[1]?`<span class="lsub2">${p[1]}</span>`:''); };
+  const cellHTML=(v)=>{ const p=String(v).split('\n'); let h=`<span class="lname">${p[0]}</span>`; if(p[1])h+=`<span class="lsub">${p[1]}</span>`; return h; };
   let html=`<div class="level-title">${t.title}</div><div class="level-scroll"><table class="level-tbl"><thead><tr>`;
-  t.cols.forEach((c,ci)=>{ html+=`<th${ci===0?' class="lh"':''}>${hcell(c)}</th>`; });
+  t.cols.forEach((c,ci)=>{ html+=`<th${ci<nlh?(ci===0?' class="lh"':' class="lh2"'):''}>${hcell(c)}</th>`; });
   html+='</tr></thead><tbody>';
   t.rows.forEach((r,ri)=>{
     html+='<tr>';
     r.forEach((cell,ci)=>{
-      if(ci===0){ const small = (cell.length>=6 || cell.indexOf('結合')>=0)?' lh-sm':''; html+=`<td class="lh${small}">${hcell(cell)}</td>`; }
-      else if(cell){ html+=`<td class="lcell" data-r="${ri}" data-c="${ci}" data-open="0"><span class="lq">？</span></td>`; }
+      if(cell===MERGE_UP) return;                       // 原表の結合セル（上のセルに含める）
+      if(ci<nlh){ const small = (useSm && (cell.length>=6 || cell.indexOf('結合')>=0))?' lh-sm':''; html+=`<td class="${ci===0?'lh':'lh2'}${small}">${hcell(cell)}</td>`; }
+      else if(cell){
+        let rs=1; while(ri+rs<t.rows.length && t.rows[ri+rs][ci]===MERGE_UP) rs++;
+        // ？と経穴名を重ねて配置し、閉じている状態でも本文分の高さを確保する（タップで行高が動かない）
+        html+=`<td class="lcell"${rs>1?` rowspan="${rs}"`:''} data-r="${ri}" data-c="${ci}" data-open="0">`
+            + `<div class="lbox"><span class="lq">？</span><span class="lval">${cellHTML(cell)}</span></div></td>`;
+      }
       else { html+='<td class="lempty"></td>'; }
     });
     html+='</tr>';
@@ -3138,17 +3192,11 @@ function renderLevel(){
     html+='<div class="level-notes">'+t.notes.map(n=>`<div>${n}</div>`).join('')+'</div>';
   }
   document.getElementById('levelArea').innerHTML=html;
-  const cellHTML=(v)=>{
-    const parts=String(v).split('\n');
-    let h=`<span class="lname">${parts[0]}</span>`;
-    if(parts[1]) h+=`<span class="lsub">${parts[1]}</span>`;
-    return h;
-  };
   document.querySelectorAll('#levelArea .lcell').forEach(td=>{
     td.onclick=()=>{
-      const r=+td.dataset.r,c=+td.dataset.c,open=td.dataset.open==='1';
-      if(open){ td.dataset.open='0'; td.classList.remove('shown'); td.innerHTML='<span class="lq">？</span>'; }
-      else{ td.dataset.open='1'; td.classList.add('shown'); td.innerHTML=cellHTML(t.rows[r][c]); }
+      const open=td.dataset.open==='1';
+      td.dataset.open=open?'0':'1';
+      td.classList.toggle('shown',!open);
     };
   });
 }
@@ -3162,12 +3210,9 @@ document.getElementById('levelAll').onclick=()=>{
   const turnOn=!allBtn.classList.contains('on');
   allBtn.classList.toggle('on',turnOn);
   allBtn.textContent=turnOn?'すべて隠す':'すべて表示';
-  const t=curLevel==='chest'?levelChest:levelBack;
-  const cellHTML=(v)=>{ const p=String(v).split('\n'); let h=`<span class="lname">${p[0]}</span>`; if(p[1])h+=`<span class="lsub">${p[1]}</span>`; return h; };
   document.querySelectorAll('#levelArea .lcell').forEach(td=>{
-    const r=+td.dataset.r,c=+td.dataset.c;
-    if(turnOn){ td.dataset.open='1'; td.classList.add('shown'); td.innerHTML=cellHTML(t.rows[r][c]); }
-    else{ td.dataset.open='0'; td.classList.remove('shown'); td.innerHTML='<span class="lq">？</span>'; }
+    td.dataset.open=turnOn?'1':'0';
+    td.classList.toggle('shown',turnOn);
   });
 };
 
@@ -3295,7 +3340,8 @@ const gogyoTables=[
     {label:'五志', cells:['怒','喜','思','憂','恐']},
     {label:'五声', cells:['呼','笑','歌','哭','呻']},
     {label:'五病', cells:['語','噫','呑','咳','欠']},
-    {label:'五労', cells:['久行','久視','久坐','久臥','久立']}
+    {label:'五労', cells:['久行','久視','久坐','久臥','久立']},
+    {label:'五役', cells:['色','臭','味','声','液']}
   ]},
   {title:'飲食物における五行配当', rows:[
     {label:'五果', cells:['李','杏','棗','桃','栗']},
@@ -3518,7 +3564,7 @@ renderNerve();
 
 /* ===== 追加コンテンツ（欧文略語・骨度法） ===== */
 const RYAKUGO_DATA=[{"abbr": "ACLS", "ja": "二次救命処置（二次心肺蘇生法）", "en": "advanced cardiovascular life support"}, {"abbr": "ACTH", "ja": "副腎皮質刺激ホルモン", "en": "adrenocorticotropic hormone"}, {"abbr": "ADH", "ja": "抗利尿ホルモン", "en": "antidiuretic hormone"}, {"abbr": "ADHD", "ja": "注意欠如多動症", "en": "attention deficit hyperactivity disorder"}, {"abbr": "ADL", "ja": "日常生活動作", "en": "activities of daily living"}, {"abbr": "AED", "ja": "自動体外式除細動器", "en": "automated external defibrillator"}, {"abbr": "AFP", "ja": "αフェトプロテイン", "en": "α-fetoprotein"}, {"abbr": "AGA", "ja": "男性型脱毛症", "en": "androgenetic alopecia"}, {"abbr": "AGML", "ja": "急性胃粘膜病変", "en": "acute gastric mucosal lesion"}, {"abbr": "AIDS", "ja": "後天性免疫不全症候群", "en": "acquired immunodeficiency syndrome"}, {"abbr": "ALD", "ja": "アルコール性肝疾患", "en": "alcoholic liver disease"}, {"abbr": "ALP", "ja": "アルカリホスファターゼ", "en": "alkaline phosphatase"}, {"abbr": "ALS", "ja": "筋委縮性側索硬化症", "en": "amyotrophic lateral sclerosis"}, {"abbr": "ALT", "ja": "アラニンアミノトランスフェラーゼ", "en": "alanine aminotransferase"}, {"abbr": "ARDS", "ja": "急性呼吸促迫症候群", "en": "acute respiratory distress syndrome"}, {"abbr": "ASD", "ja": "自閉スペクトラム症", "en": "autism spectrum disorder"}, {"abbr": "ASO", "ja": "抗ストレプトリジンO抗体", "en": "antistreptolysin O"}, {"abbr": "AST", "ja": "アスパラギン酸アミノトランスフェラーゼ", "en": "aspartate aminotransferase"}, {"abbr": "ATP", "ja": "アデノシン三リン酸", "en": "adenosine triphosphate"}, {"abbr": "BLS", "ja": "一次救命処置", "en": "basic life support"}, {"abbr": "BMI", "ja": "体格指数", "en": "body mass index"}, {"abbr": "BUN", "ja": "血清尿素窒素", "en": "blood urea nitrogen"}, {"abbr": "CA125", "ja": "がん抗原125", "en": "cancer antigen 125"}, {"abbr": "CA15-3", "ja": "糖鎖抗原15-3", "en": "carbohydrate antigen 15-3"}, {"abbr": "CA19-9", "ja": "シアリルLea抗原（糖鎖抗原）", "en": "carbohydrate antigen 19-9"}, {"abbr": "CEA", "ja": "癌胎児性抗原", "en": "carcinoembryonic antigen"}, {"abbr": "CGRP", "ja": "カルシトニン遺伝子関連ペプチド", "en": "calcitonin gene-related peptide"}, {"abbr": "CK", "ja": "クレアチンキナーゼ", "en": "creatine kinase"}, {"abbr": "CKD", "ja": "慢性腎臓病", "en": "chronic kidney disease"}, {"abbr": "CMI", "ja": "コーネルメディカルインデックス（CMI健康調査表）", "en": "Cornell medical index"}, {"abbr": "COPD", "ja": "慢性閉塞性肺疾患", "en": "chronic obstructive pulmonary disease"}, {"abbr": "COVID-19", "ja": "新型コロナウイルス感染症", "en": "coronavirus disease 2019"}, {"abbr": "CRP", "ja": "C反応性タンパク", "en": "C-reactive protein"}, {"abbr": "CT", "ja": "コンピューター断層撮影", "en": "computed tomography"}, {"abbr": "DIC（S）", "ja": "播種性血管内凝固（症候群）", "en": "disseminated intravascular coagulation (syndrome)"}, {"abbr": "DVT", "ja": "深部静脈血栓症", "en": "deep vein thrombosis"}, {"abbr": "ED", "ja": "勃起障害", "en": "erectile dysfunction"}, {"abbr": "EOG", "ja": "エチレンオキサイドガス", "en": "ethylene oxide gas"}, {"abbr": "FD", "ja": "機能性ディスペプシア", "en": "functional dyspepsia"}, {"abbr": "FIM", "ja": "機能的自立度評価法", "en": "functional independence measure"}, {"abbr": "FT3", "ja": "遊離トリヨードサイロニン", "en": "free triiodothyronine"}, {"abbr": "FT4", "ja": "遊離サイロキシン", "en": "free thyroxine"}, {"abbr": "GERD", "ja": "胃食道逆流症", "en": "gastroesophageal reflux disease"}, {"abbr": "GFR", "ja": "糸球体ろ過量", "en": "glomerular filtration rate"}, {"abbr": "GVH", "ja": "移植片対宿主", "en": "graft-versus-host"}, {"abbr": "HAV", "ja": "A型肝炎ウイルス", "en": "hepatitis A virus"}, {"abbr": "HBV", "ja": "B型肝炎ウイルス", "en": "hepatitis B virus"}, {"abbr": "HbA1c", "ja": "ヘモグロビンエーワンシー", "en": "hemoglobin A1c"}, {"abbr": "HCV", "ja": "C型肝炎ウイルス", "en": "hepatitis C virus"}, {"abbr": "HDL", "ja": "高密度（比重）リポタンパク質", "en": "high density lipoprotein"}, {"abbr": "HEV", "ja": "E型肝炎ウイルス", "en": "hepatitis E virus"}, {"abbr": "HIV", "ja": "ヒト免疫不全ウイルス", "en": "human immunodeficiency virus"}, {"abbr": "HPV", "ja": "ヒトパピローマウイルス", "en": "human papilloma virus"}, {"abbr": "HTLV-1", "ja": "ヒトT細胞白血病ウイルス1型", "en": "human T-cell leukemia virus type 1"}, {"abbr": "HVG", "ja": "宿主対移植片", "en": "host-versus-graft"}, {"abbr": "IADL", "ja": "日常生活関連動作", "en": "instrumental activities of daily living"}, {"abbr": "IBS", "ja": "過敏性腸症候群", "en": "irritable bowel syndrome"}, {"abbr": "ICF", "ja": "国際生活機能分類", "en": "International Classification of Functioning, Disability and Health"}, {"abbr": "IgA", "ja": "免疫グロブリンA", "en": "immunoglobulin A"}, {"abbr": "ILO", "ja": "国際労働機関", "en": "International Labour Organization"}, {"abbr": "JICA", "ja": "国際協力機構", "en": "Japan International Cooperation Agency"}, {"abbr": "LD（LDH）", "ja": "乳酸脱水素酵素", "en": "lactate dehydrogenase"}, {"abbr": "LDL", "ja": "低密度（比重）リポタンパク質", "en": "low density lipoprotein"}, {"abbr": "MCTD", "ja": "混合性結合組織病", "en": "mixed connective tissue disease"}, {"abbr": "MMSE", "ja": "ミニメンタルステート検査", "en": "mini-mental state examination"}, {"abbr": "MRI", "ja": "磁気共鳴画像", "en": "magnetic resonance imaging"}, {"abbr": "MRSA", "ja": "メチシリン耐性黄色ブドウ球菌", "en": "methicillin-resistant staphylococcus aureus"}, {"abbr": "MCI", "ja": "軽度認知障害", "en": "mild cognitive impairment"}, {"abbr": "NIH", "ja": "米国国立衛生研究所", "en": "National Institutes of Health"}, {"abbr": "NO", "ja": "一酸化窒素", "en": "nitric oxide"}, {"abbr": "NRS", "ja": "数値評価スケール", "en": "numerical rating scale"}, {"abbr": "PET", "ja": "ポジトロン断層撮影（陽電子放射断層撮影）", "en": "positron emission tomography"}, {"abbr": "PMS", "ja": "月経前症候群", "en": "premenstrual syndrome"}, {"abbr": "POS", "ja": "問題志向型システム", "en": "problem-oriented system"}, {"abbr": "POMR", "ja": "問題志向型診療録", "en": "problem-oriented medical record"}, {"abbr": "PRL", "ja": "プロラクチン", "en": "prolactin"}, {"abbr": "PSA", "ja": "前立腺特異抗原", "en": "prostate specific antigen"}, {"abbr": "PTH", "ja": "副甲状腺ホルモン", "en": "parathyroid hormone"}, {"abbr": "PTSD", "ja": "心的外傷後ストレス症", "en": "post-traumatic stress disorder"}, {"abbr": "QOL", "ja": "生活の質", "en": "quality of life"}, {"abbr": "RBD", "ja": "レム睡眠行動異常症", "en": "REM sleep behavior disorder"}, {"abbr": "RDQ", "ja": "ローランド・モリス質問票（腰痛特異的QOL尺度）", "en": "Roland-Morris disability questionnaire"}, {"abbr": "RA", "ja": "関節リウマチ", "en": "rheumatoid arthritis"}, {"abbr": "RF", "ja": "リウマチ因子", "en": "rheumatoid factor"}, {"abbr": "RICE", "ja": "ライス", "en": "rest, icing, compression, elevation"}, {"abbr": "RLS", "ja": "レストレスレッグス症候群", "en": "restless legs syndrome"}, {"abbr": "ROM", "ja": "関節可動域", "en": "range of motion"}, {"abbr": "SARS", "ja": "重症急性呼吸器症候群", "en": "severe acute respiratory syndrome"}, {"abbr": "SCC", "ja": "扁平上皮癌（関連抗原）", "en": "squamous cell carcinoma (related antigen)"}, {"abbr": "SOAP", "ja": "主観的情報、客観的情報、評価、計画", "en": "subjective, objective, assessment, plan"}, {"abbr": "SLE", "ja": "全身性エリテマトーデス", "en": "systemic lupus erythematosus"}, {"abbr": "TENS", "ja": "経皮的末梢神経電気刺激", "en": "transcutaneous electrical nerve stimulation"}, {"abbr": "TIA", "ja": "一過性脳虚血発作", "en": "transient ischemic attack"}, {"abbr": "TOS", "ja": "胸郭出口症候群", "en": "thoracic outlet syndrome"}, {"abbr": "TSH", "ja": "甲状腺刺激ホルモン", "en": "thyroid stimulating hormone"}, {"abbr": "UNICEF", "ja": "国際連合児童基金", "en": "United Nations Children's Fund"}, {"abbr": "VAS", "ja": "視覚的評価スケール", "en": "visual analogue scale"}, {"abbr": "VIP", "ja": "血管作動性腸ペプチド", "en": "vasoactive intestinal peptide"}, {"abbr": "WHO", "ja": "世界保健機関", "en": "World Health Organization"}, {"abbr": "γ-GT", "ja": "ガンマグルタミルトランスフェラーゼ", "en": "γ-glutamyltransferase"}];
-const KOTSUDO_DATA=[{"region": "頭部、顔面部", "items": [{"from": "前髪際中点～後髪際中点", "len": "1尺2寸"}, {"from": "眉間～前髪際中点", "len": "3寸"}, {"from": "両額角髪際間", "len": "9寸"}, {"from": "両乳様突起間", "len": "9寸"}]}, {"region": "胸部、腹部、季肋部", "items": [{"from": "頸切痕～胸骨体下端", "len": "9寸"}, {"from": "胸骨体下端～臍中央", "len": "8寸"}, {"from": "臍中央～恥骨結合上縁", "len": "5寸"}, {"from": "両乳頭間", "len": "8寸"}]}, {"region": "上背部", "items": [{"from": "左右の肩甲棘内端縁間", "len": "6寸"}]}, {"region": "上肢", "items": [{"from": "中指尖～手関節横紋", "len": "8寸5分"}, {"from": "腋窩横紋前端または後端～肘窩", "len": "9寸"}, {"from": "肘窩～手関節横紋", "len": "1尺2寸"}]}, {"region": "下肢", "items": [{"from": "恥骨結合上縁～膝蓋骨上縁", "len": "1尺8寸"}, {"from": "膝蓋骨尖～内果尖", "len": "1尺5寸"}, {"from": "脛骨内側顆下縁～内果尖", "len": "1尺3寸"}, {"from": "脛骨内側顆下縁～膝蓋骨尖", "len": "2寸"}, {"from": "大転子頂点～膝窩", "len": "1尺9寸"}, {"from": "殿溝～膝窩", "len": "1尺4寸"}, {"from": "膝窩～外果尖", "len": "1尺6寸"}, {"from": "内果尖～足底", "len": "3寸"}, {"from": "足指尖～踵（足底）", "len": "1尺2寸"}]}];
+const KOTSUDO_DATA=[{"region": "頭部、顔面部", "items": [{"from": "前髪際中点～後髪際中点", "len": "1尺2寸"}, {"from": "眉間～前髪際中点", "len": "3寸"}, {"from": "両額角髪際間", "len": "9寸"}, {"from": "両乳様突起間", "len": "9寸"}]}, {"region": "胸部、腹部、季肋部", "items": [{"from": "頸切痕～胸骨体下端", "len": "9寸"}, {"from": "胸骨体下端～臍中央", "len": "8寸"}, {"from": "臍中央～恥骨結合上縁", "len": "5寸"}, {"from": "両乳頭間", "len": "8寸"}]}, {"region": "上背部", "items": [{"from": "左右の肩甲棘内端縁間", "len": "6寸"}]}, {"region": "上肢", "items": [{"from": "中指尖～手関節横紋", "len": "8寸5分"}, {"from": "腋窩横紋前端または後端～肘窩", "len": "9寸"}, {"from": "肘窩～手関節横紋", "len": "1尺2寸"}]}, {"region": "下肢", "items": [{"from": "恥骨結合上縁～膝蓋骨上縁", "len": "1尺8寸"}, {"from": "膝蓋骨尖～内果尖", "len": "1尺5寸"}, {"from": "脛骨内側顆下縁～内果尖", "len": "1尺3寸"}, {"from": "脛骨内側顆下縁～膝蓋骨尖", "len": "2寸"}, {"from": "大転子頂点～膝窩", "len": "1尺9寸"}, {"from": "殿溝～膝窩", "len": "1尺4寸"}, {"from": "膝窩～外果尖", "len": "1尺6寸"}, {"from": "内果尖～足底", "len": "3寸"}, {"from": "足指尖～踵（足底）", "len": "1尺2寸"}]}, {"region": "同身寸法（指寸法）", "items": [{"from": "男は左、女は右とし、母指第1節の横幅", "len": "1寸"}, {"from": "男は左、女は右とし、示指・中指・薬指第1節をあわせた幅", "len": "2寸"}, {"from": "示指から小指までをあわせ、その中節を横にはかり、その幅", "len": "3寸"}, {"from": "母指と中指の指頭をあわせて環をつくり、中指の橈側にできる横紋の端を結ぶ間", "len": "1寸"}, {"from": "中指末節骨の指幅（頬車・豊隆の取穴に用いる）", "len": "1横指"}]}];
 
 /* ===================== 欧文略語 ===================== */
 function escapeHtmlR(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
