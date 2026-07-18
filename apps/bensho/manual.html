@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>東洋医学 弁証支援アプリ 使用説明書</title>
+<title>東洋医学 弁証・選穴支援アプリ 使用説明書</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&family=Noto+Serif+JP:wght@400;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -290,50 +290,63 @@ footer a{color:var(--mid)}
 </head><body>
 <div class="cover"><div class="cover-inner">
   <span class="cover-eyebrow">USER MANUAL</span>
-  <h1>東洋医学 <em>弁証</em>支援アプリ</h1>
-  <p class="cover-sub">問診から弁証鑑別・カルテまで</p>
+  <h1>東洋医学 <em>弁証・選穴</em>支援アプリ</h1>
+  <p class="cover-sub">経穴検索と、問診から弁証鑑別・カルテまで</p>
   <span class="cover-ver">東洋医学 学習スイート 収録アプリ</span>
-  <div class="cover-chips"><div class="chip"><strong>🩺</strong>問診→弁証→カルテ</div><div class="chip"><strong>📊</strong>弁証スコア表示</div><div class="chip"><strong>🖐️</strong>徒手検査の分岐</div><div class="chip"><strong>⚙</strong>データ編集・表示設定</div></div>
-  <div class="cover-credits">東洋医学 学習スイート<br>制作者：大阪行岡医療専門学校長柄校　鍼灸科　75期生　藤本</div>
+  <div class="cover-chips"><div class="chip"><strong>🔎</strong>経穴検索（主治症⇄経穴）</div><div class="chip"><strong>🩺</strong>問診→弁証→カルテ</div><div class="chip"><strong>🖐️</strong>徒手検査・機能評価</div><div class="chip"><strong>⚙</strong>データ編集・表示設定</div></div>
+  <div class="cover-credits">東洋医学 学習スイート<br>制作者：大阪行岡医療専門学校長柄校　鍼灸科　75期生</div>
 </div></div>
 <div class="toc-section"><div class="wrap">
   <h2>TABLE OF CONTENTS</h2>
-  <div class="toc-grid"><a class="toc-item" href="#b1"><span class="toc-num">01</span>このアプリについて</a><a class="toc-item" href="#b2"><span class="toc-num">02</span>5つのタブの流れ</a><a class="toc-item" href="#b3"><span class="toc-num">03</span>症状入力と徒手検査</a><a class="toc-item" href="#b4"><span class="toc-num">04</span>弁証スコアの見方</a><a class="toc-item" href="#b5"><span class="toc-num">05</span>カルテの保存・検索</a><a class="toc-item" href="#b6"><span class="toc-num">06</span>データ編集・表示設定</a><a class="toc-item" href="#b7"><span class="toc-num">07</span>患者用問診表</a><a class="toc-item" href="#b8"><span class="toc-num">08</span>困ったときは</a></div>
+  <div class="toc-grid"><a class="toc-item" href="#b1"><span class="toc-num">01</span>このアプリについて</a><a class="toc-item" href="#b2"><span class="toc-num">02</span>7つのタブの構成</a><a class="toc-item" href="#b9"><span class="toc-num">03</span>経穴検索の使い方</a><a class="toc-item" href="#b3"><span class="toc-num">04</span>症状入力と徒手検査</a><a class="toc-item" href="#b4"><span class="toc-num">05</span>弁証スコアの見方</a><a class="toc-item" href="#b5"><span class="toc-num">06</span>カルテの保存・検索</a><a class="toc-item" href="#b6"><span class="toc-num">07</span>データ編集・表示設定</a><a class="toc-item" href="#b7"><span class="toc-num">08</span>患者用問診表</a><a class="toc-item" href="#b8"><span class="toc-num">09</span>困ったときは</a></div>
 </div></div>
 <div class="section" id="b1"><div class="wrap">
   <div class="section-header"><div class="sec-num">01</div>
   <div class="section-header-text"><h2>このアプリについて</h2><p>弁証鑑別と臨床補助</p></div></div>
-  <p class="prose">「東洋医学 弁証支援アプリ」は、問診 → 症状入力 → 徒手検査 → 弁証鑑別 → 治療方針 → カルテ保存・検索 という一連の流れを支援するツールです。入力した症状から弁証パターンの候補をスコア表示し、治療穴（補・瀉）や経絡、徒手検査の判断の分岐を参考として提示します。</p><div class="callout callout-red"><div class="ico">⚠️</div><div class="body"><h4>鑑別支援ツールです</h4><p>本アプリは学習・臨床補助のための鑑別支援ツールです。表示される弁証・治療穴・検査は候補であり、確定診断ではありません。最終的な判断は必ず施術者ご自身が行ってください。</p></div></div><div class="callout callout-info"><div class="ico">🌐</div><div class="body"><h4>オンライン専用</h4><p>このアプリはオンライン専用です。起動のたびにインターネットからデータを読み込みます。なお、保存したカルテや編集内容は端末内（ブラウザ）に保持されます。</p></div></div>
+  <p class="prose">「東洋医学 弁証・選穴支援アプリ」は、<strong>経穴検索</strong>（主治症→経穴／経穴名→主治症）と、<strong>問診 → 症状入力 → 徒手検査 → 弁証鑑別 → 治療方針 → カルテ保存・検索</strong>という一連の流れを、1つの画面にまとめたツールです。入力した症状から弁証パターンの候補をスコア表示し、治療穴（補・瀉・平）や関連経絡、徒手検査の判断の分岐を参考として提示します。弁証結果に出た治療穴をタップすれば、その経穴の主治症をその場でポップアップ確認できます。</p><div class="callout callout-red"><div class="ico">⚠️</div><div class="body"><h4>鑑別支援ツールです</h4><p>本アプリは学習・臨床補助のための鑑別支援ツールです。表示される弁証・治療穴・検査は候補であり、確定診断ではありません。最終的な判断は必ず施術者ご自身が行ってください。</p></div></div><div class="callout callout-info"><div class="ico">🌐</div><div class="body"><h4>オンライン専用</h4><p>このアプリはオンライン専用です。起動のたびにサーバーから経穴データを読み込みます。経穴データが端末に保存されることはありません。なお、保存したカルテや編集内容は端末内（ブラウザ）に保持されます。</p></div></div>
 </div></div><div class="section" id="b2"><div class="wrap">
   <div class="section-header"><div class="sec-num">02</div>
-  <div class="section-header-text"><h2>5つのタブの流れ</h2><p>① 問診 → ② 症状 → ③ 徒手検査 → ④ 弁証 → ⑤ カルテ</p></div></div>
-  <div class="steps"><div class="step"><div class="step-n">1</div><div class="step-body"><h4>① 問診表</h4><p>患者さんに記入してもらう空欄の問診表を印刷・PDF出力できます（アプリの入力欄とは別物です）。見出しや項目、載せる症状は編集できます（→6章）。</p></div></div><div class="step"><div class="step-n">2</div><div class="step-body"><h4>② 症状入力</h4><p>当てはまる症状にチェックを入れます。グループごとに整理されています。複数選択できます。</p></div></div><div class="step"><div class="step-n">3</div><div class="step-body"><h4>③ 徒手検査フロー</h4><p>痛みの部位などに応じて、該当する徒手検査・機能評価が表示されます。「実施した」検査の結果に応じて、判断の分岐（参考）が候補を示します。</p></div></div><div class="step"><div class="step-n">4</div><div class="step-body"><h4>④ 弁証・治療方針</h4><p>入力内容から弁証パターンの候補をスコア順に表示します。各候補に治法・治療穴（補=補う／瀉=瀉す／平=平補平瀉）や関連経絡が示されます。「↻ 弁証を再計算」で再計算できます。</p></div></div><div class="step"><div class="step-n">5</div><div class="step-body"><h4>⑤ カルテ</h4><p>弁証結果を患者情報とともにカルテとして保存できます。保存したカルテは検索・編集でき、CSV出力も可能です。カルテを含む全データのバックアップは統合ホームから行えます。</p></div></div></div>
-</div></div><div class="section" id="b3"><div class="wrap">
+  <div class="section-header-text"><h2>7つのタブの構成</h2><p>経穴検索（1〜2）＋ 診察フロー（3〜7）</p></div></div>
+  <p class="prose">画面上部のタブは、<strong>経穴検索</strong>（1〜2）と<strong>診察フロー</strong>（3〜7）の2列に分かれています。各タブは自由に行き来でき、入力したデータはタブを移動しても保持されます。</p>
+  <table class="tbl"><tr><th>タブ</th><th>内容</th></tr><tr><td>1 主治症→経穴</td><td>症状（主治症）を入力して、該当する経穴を探します。</td></tr><tr><td>2 経穴名→主治症</td><td>経穴名・ふりがなから、その経穴の主治症を調べます。</td></tr><tr><td>3 問診</td><td>患者番号・氏名・来院日・予約/来院時間・主訴・経過などを入力します。患者用問診表の印刷もここから。</td></tr><tr><td>4 症状</td><td>当てはまる症状にチェックを入れます（複数選択可）。</td></tr><tr><td>5 徒手検査</td><td>痛みの部位に応じた整形外科テストと、痛み以外の機能評価を記録します。</td></tr><tr><td>6 弁証</td><td>弁証パターンの候補をスコア順に表示。治療内容・施術後の様子を記入してカルテに保存します。</td></tr><tr><td>7 カルテ</td><td>保存したカルテの検索・編集・印刷・CSV出力。</td></tr></table>
+  <div class="steps"><div class="step"><div class="step-n">1</div><div class="step-body"><h4>問診</h4><p>患者番号と氏名は<strong>必須</strong>です。患者番号は同一患者の記録を時系列でまとめるキーになります。患者番号を入れると登録済みの氏名が、氏名を入れると患者番号が自動表示されます（全角「１２３」と半角「123」、氏名の空白の有無は同じものとして扱われます）。「🖨 患者用問診表を印刷/PDF」では、患者さんに記入してもらう空欄の用紙を出力できます（アプリの入力欄とは別物です→8章）。「新規カルテ（入力クリア）」で入力欄を空にできます。</p></div></div><div class="step"><div class="step-n">2</div><div class="step-body"><h4>症状</h4><p>当てはまる症状にチェックを入れます。グループごとに整理されており、複数選択できます。チェックが多いほど弁証の精度が上がります。<strong>「痛みの部位」を選ぶと、次の徒手検査でその部位のテストが提示されます。</strong></p></div></div><div class="step"><div class="step-n">3</div><div class="step-body"><h4>徒手検査</h4><p>選んだ部位に応じた整形外科テストと判定フロー（症状→テスト→陽性/陰性→疑われる病態）が表示されます。「実施した」にチェックを入れると陽性／陰性の選択肢が出て、実施したテストだけがカルテに記録されます。痛みの有無に関わらず行える<strong>機能評価</strong>（神経・可動域・循環・姿勢）も同じ方式で記録できます。「所見・経過メモ」欄に補足を書けます。</p></div></div><div class="step"><div class="step-n">4</div><div class="step-body"><h4>弁証・治療方針</h4><p>入力内容から弁証パターンの候補をスコア順に表示します。各候補に治法・治療穴（補=補う／瀉=瀉す／平=平補平瀉）が示され、部位症状からは<strong>経絡弁証</strong>（関連経絡と局所穴）も別枠で出ます。「↻ 弁証を再計算」で再計算できます。<strong>治療内容</strong>（実施した処置）と<strong>施術後の様子・次回の予定</strong>を記入し、「💾 このカルテを保存」で1回分の来院記録として保存します。</p></div></div><div class="step"><div class="step-n">5</div><div class="step-body"><h4>カルテ</h4><p>保存したカルテは患者番号・氏名で検索でき、編集・印刷・CSV出力ができます。カルテを含む全データのバックアップは統合ホームから行えます。</p></div></div></div>
+  <div class="callout callout-tip"><div class="ico">👆</div><div class="body"><h4>治療穴タップで主治症を確認</h4><p>弁証タブに表示された治療穴をタップすると、経穴検索と同じデータからその経穴の主治症がポップアップ表示されます。タブを移動せずに「なぜこの穴か」を確認できます。</p></div></div>
+</div></div><div class="section" id="b9"><div class="wrap">
   <div class="section-header"><div class="sec-num">03</div>
-  <div class="section-header-text"><h2>症状入力と徒手検査</h2><p>候補を導く入力</p></div></div>
-  <p class="prose">症状入力では、寒熱・精神睡眠・頭顔目・消化・泌尿生殖・呼吸・血婦人・舌脈などのグループから、該当する症状を選びます。徒手検査フローでは、痛みの部位を選ぶと関連する検査が表示され、各検査の「判断の分岐（参考）」に陽性時・陰性時の結論候補が示されます。</p><div class="callout callout-warn"><div class="ico">📝</div><div class="body"><h4>検査の分岐は参考です</h4><p>徒手検査の判断の分岐は、標準的な解釈をもとにした参考情報です。実際の臨床判断は所見全体をふまえて施術者が行ってください。</p></div></div>
-</div></div><div class="section" id="b4"><div class="wrap">
+  <div class="section-header-text"><h2>経穴検索の使い方</h2><p>主治症⇄経穴を双方向で調べる</p></div></div>
+  <p class="prose">タブ「1 主治症→経穴」「2 経穴名→主治症」は、全361経穴のデータを双方向に検索できる選穴支援機能です。起動時に自動でデータを読み込むため、取り込み作業は不要です。</p>
+  <div class="sh3">1 主治症→経穴（症状から探す）</div>
+  <div class="steps"><div class="step"><div class="step-n">1</div><div class="step-body"><h4>症状・主治症を入力して「追加」</h4><p>「例：頭痛、不眠、腰痛 …」のように語句を入れて「追加」を押します。<strong>複数の語句を追加できます。</strong>下部の「よく検索される症状」のチップをタップしても追加できます。</p></div></div><div class="step"><div class="step-n">2</div><div class="step-body"><h4>条件（AND／OR）を選ぶ</h4><p><strong>すべて含む (AND)</strong>＝入力したすべての主治症をもつ経穴に絞る／<strong>いずれか (OR)</strong>＝どれか1つでも該当する経穴を出す。「クリア」で入力をリセットします。</p></div></div><div class="step"><div class="step-n">3</div><div class="step-body"><h4>必要なら出典で絞り込む</h4><p>「出典で絞り込む」を開くと、収録している各家の出典を選んでチェックできます。特定の出典の記載だけを見たいときに使います。</p></div></div><div class="step"><div class="step-n">4</div><div class="step-body"><h4>結果を確認する</h4><p>「該当 ◯ 穴」と件数が表示され、経穴ごとに出典別の主治症が並びます。</p></div></div></div>
+  <div class="sh3">2 経穴名→主治症（経穴から調べる）</div>
+  <p class="prose">経穴名・読みで検索します。<strong>漢字でもふりがなでも、部分一致で探せます</strong>（例：合谷／ごうこく、足三里／あしさんり）。「経絡で絞り込む」から経絡を指定すると、その経絡の経穴だけに絞れます。「クリア」で入力をリセットします。</p>
+  <div class="callout callout-info"><div class="ico">📚</div><div class="body"><h4>出典について</h4><p>収録している出典は、取り込んだ経穴データから自動で作られます。出典によって主治症の記載は異なります。複数の出典を見比べて、根拠の重なり方を確かめてください。</p></div></div>
+  <div class="callout callout-warn"><div class="ico">⚠️</div><div class="body"><h4>検索結果も候補です</h4><p>表示される主治症は各家の記載をまとめたもので、優劣や確定的な適応を示すものではありません。選穴の最終判断は施術者ご自身が行ってください。</p></div></div>
+</div></div><div class="section" id="b3"><div class="wrap">
   <div class="section-header"><div class="sec-num">04</div>
-  <div class="section-header-text"><h2>弁証スコアの見方</h2><p>候補の絞り込み</p></div></div>
-  <p class="prose">弁証パターンは、チェックした症状に応じてスコアが計算され、点数の高い順に候補として並びます。スコアはあくまで入力された症状からの目安です。複数の候補が近い点数のときは、所見全体や徒手検査の結果とあわせて鑑別してください。各候補には治法と治療穴（補・瀉・平）が示されます。</p>
-</div></div><div class="section" id="b5"><div class="wrap">
+  <div class="section-header-text"><h2>症状入力と徒手検査</h2><p>候補を導く入力</p></div></div>
+  <p class="prose">症状入力では、全身・寒熱／精神・睡眠／頭・顔・目／消化・腹部／呼吸・胸／泌尿・生殖／血・婦人／舌・脈／痛みの部位などのグループから、該当する症状を選びます。徒手検査フローでは、痛みの部位を選ぶと関連する検査が表示され、各検査の「判断の分岐（参考）」に陽性時・陰性時の結論候補が示されます。<strong>各テストは「実施した」にチェックを入れると陽性／陰性の選択肢が出て、実施したものだけが「テスト名：陽性/陰性」の形でカルテに記録されます。</strong>下部の「機能評価（痛み以外）」は、痛みの有無に関わらず実施できる検査です（任意）。</p><div class="callout callout-warn"><div class="ico">📝</div><div class="body"><h4>検査の分岐は参考です</h4><p>徒手検査の判断の分岐は、標準的な解釈をもとにした参考情報です。実際の臨床判断は所見全体をふまえて施術者が行ってください。</p></div></div>
+</div></div><div class="section" id="b4"><div class="wrap">
   <div class="section-header"><div class="sec-num">05</div>
-  <div class="section-header-text"><h2>カルテの保存・検索</h2><p>記録を残す</p></div></div>
-  <div class="steps"><div class="step"><div class="step-n">1</div><div class="step-body"><h4>カルテに保存</h4><p>弁証結果を、患者名やメモとともにカルテとして保存します。</p></div></div><div class="step"><div class="step-n">2</div><div class="step-body"><h4>検索・編集</h4><p>保存したカルテは一覧から検索でき、「✎ この記録を編集」で内容を修正できます。</p></div></div><div class="step"><div class="step-n">3</div><div class="step-body"><h4>バックアップ・出力</h4><p>「CSV出力」で、保存したカルテを表計算ソフト用に書き出せます。カルテを含む全アプリのデータのバックアップ（書き出し・復元）は、統合ホーム画面下部の「学習データのバックアップ」からまとめて行えます。</p></div></div></div><div class="callout callout-tip"><div class="ico">💾</div><div class="body"><h4>データは端末内に保存</h4><p>カルテは利用者の端末内（ブラウザ）に保存されます。機種変更や他端末への移行時は、統合ホームの一括バックアップを使って引き継いでください。</p></div></div>
-</div></div><div class="section" id="b6"><div class="wrap">
+  <div class="section-header-text"><h2>弁証スコアの見方</h2><p>候補の絞り込み</p></div></div>
+  <p class="prose">弁証パターンは、チェックした症状に応じてスコアが計算され、点数の高い順に候補として並びます。スコアはあくまで入力された症状からの目安です。複数の候補が近い点数のときは、所見全体や徒手検査の結果とあわせて鑑別してください。各候補には治法と治療穴が示され、<strong>補（緑）＝補う・温める／瀉（赤）＝散らす・瀉す／平（茶）＝平補平瀉</strong>で色分けされます。痛みの部位を選んでいる場合は、証とは別枠で<strong>経絡弁証</strong>（関連経絡と局所穴）も表示されます。治療穴をタップすると、その経穴の主治症をポップアップで確認できます。</p>
+</div></div><div class="section" id="b5"><div class="wrap">
   <div class="section-header"><div class="sec-num">06</div>
-  <div class="section-header-text"><h2>データ編集・表示設定</h2><p>自分用に調整する</p></div></div>
-  <p class="prose">画面の「⚙ データ編集・表示設定」から、収録データを自分用に調整できます。編集内容はこの端末にのみ保存され、組み込みデータに重ねて表示されます。</p><div class="sh3">弁証パターンの編集</div><p class="prose">各証について、症状のスコア、症状の追加・削除、治療穴（補・瀉・平）の編集ができます。治療穴は空欄にすると自動的に除外され、空欄のままなら「編集した」とはみなされません。</p><div class="sh3">経絡・表示設定</div><p class="prose">経絡ごとの治療穴を編集できます。「表示設定」では、症状・弁証パターン・経絡・徒手検査・機能評価について、表示／非表示を切り替えられます。症状の表示設定は患者用問診表の印刷にも反映されます。</p><div class="sh3">症状の追加</div><p class="prose">「表示設定」の「症状を追加」から、新しい症状を作って任意のグループに加えられます。追加した症状は症状チェック・問診表・パターン編集の症状選択に反映されます。</p><div class="sh3">リセット</div><p class="prose">各項目には「規定値に戻す」（個別リセット）があり、画面下部の「すべての編集を規定値に戻す」で全体を初期状態に戻せます。規定値とは、そのときの組み込みデータの値です。</p><div class="callout callout-purple"><div class="ico">🔁</div><div class="body"><h4>更新との関係</h4><p>あなたが編集した項目は編集が優先され、編集していない項目はアプリ更新で最新化されます。元に戻したいときはリセットを使ってください。学習データ（カルテ）はリセットの影響を受けません。</p></div></div>
-</div></div><div class="section" id="b7"><div class="wrap">
+  <div class="section-header-text"><h2>カルテの保存・検索</h2><p>記録を残す</p></div></div>
+  <div class="steps"><div class="step"><div class="step-n">1</div><div class="step-body"><h4>カルテに保存</h4><p>弁証タブの「💾 このカルテを保存」で、問診・症状・徒手検査・弁証・治療内容・施術後の様子までを、1回分の来院記録として保存します。</p></div></div><div class="step"><div class="step-n">2</div><div class="step-body"><h4>検索・時系列でまとまる</h4><p>カルテタブの検索欄に患者番号・氏名を入れて絞り込みます。<strong>同じ患者番号の記録は来院日順（時系列）に1つの患者カードへまとまります。</strong>カードを開くと各回の記録が並びます。</p></div></div><div class="step"><div class="step-n">3</div><div class="step-body"><h4>編集・印刷・呼び出し</h4><p><strong>✎ この記録を編集</strong>＝その来院記録を修正（保存すると作成・編集の日時が履歴として残ります）／<strong>🖨 このカルテを印刷/PDF</strong>＝その患者の全来院記録を出力／<strong>📋 直近を入力欄に呼出</strong>＝前回の内容を問診欄に呼び戻して再診の記録を続けて入力。</p></div></div><div class="step"><div class="step-n">4</div><div class="step-body"><h4>バックアップ・出力</h4><p>「CSV出力」で、保存した全カルテを表計算ソフト用に書き出せます。カルテを含む全アプリのデータのバックアップ（書き出し・復元）は、統合ホーム画面下部の「学習データのバックアップ」からまとめて行えます。</p></div></div></div><div class="callout callout-tip"><div class="ico">💾</div><div class="body"><h4>データは端末内に保存・外部送信なし</h4><p>カルテは利用者の端末内（ブラウザのlocalStorage）に保存され、外部に送信されることはありません。保存はブラウザ単位のため、別のブラウザ・別の端末とは共有されません。ブラウザの「サイトデータ削除」を行うとカルテも消えます。機種変更や他端末への移行時は、統合ホームの一括バックアップを使って引き継いでください。</p></div></div>
+</div></div><div class="section" id="b6"><div class="wrap">
   <div class="section-header"><div class="sec-num">07</div>
+  <div class="section-header-text"><h2>データ編集・表示設定</h2><p>自分用に調整する</p></div></div>
+  <p class="prose">画面上部の「⚙ データ編集・表示設定」から、収録データを自分用に調整できます。編集画面は<strong>「弁証パターン」「経絡（治療穴）」「表示設定」「問診表」</strong>の4つのタブに分かれています。編集内容はこの端末にのみ保存され、組み込みデータに重ねて表示されます。</p><div class="sh3">弁証パターンの編集</div><p class="prose">各証について、症状のスコア、症状の追加・削除、治療穴（補・瀉・平）の編集ができます。治療穴は空欄にすると自動的に除外され、空欄のままなら「編集した」とはみなされません。</p><div class="sh3">経絡・表示設定</div><p class="prose">経絡ごとの治療穴を編集できます。「表示設定」では、症状・弁証パターン・経絡・徒手検査・機能評価について、表示／非表示を切り替えられます。症状の表示設定は患者用問診表の印刷にも反映されます。</p><div class="sh3">症状の追加</div><p class="prose">「表示設定」の「症状を追加」から、新しい症状を作って任意のグループに加えられます。追加した症状は症状チェック・問診表・パターン編集の症状選択に反映されます。</p><div class="sh3">リセット</div><p class="prose">各項目には「規定値に戻す」（個別リセット）があり、画面下部の「すべての編集を規定値に戻す」で全体を初期状態に戻せます。規定値とは、そのときの組み込みデータの値です。</p><div class="callout callout-purple"><div class="ico">🔁</div><div class="body"><h4>更新との関係</h4><p>あなたが編集した項目は編集が優先され、編集していない項目はアプリ更新で最新化されます。元に戻したいときはリセットを使ってください。学習データ（カルテ）はリセットの影響を受けません。</p></div></div>
+</div></div><div class="section" id="b7"><div class="wrap">
+  <div class="section-header"><div class="sec-num">08</div>
   <div class="section-header-text"><h2>患者用問診表</h2><p>印刷して使う</p></div></div>
   <p class="prose">「① 問診表」タブ、または編集画面の「問診表」タブから、患者さんに記入してもらう空欄の問診表を印刷・PDF出力できます。タイトル・院名・あいさつ文・「既往・服薬など」欄の項目名を編集でき、問診表に載せる症状も選べます（問診表にだけ載せない設定も可能）。</p>
 </div></div><div class="section" id="b8"><div class="wrap">
-  <div class="section-header"><div class="sec-num">08</div>
+  <div class="section-header"><div class="sec-num">09</div>
   <div class="section-header-text"><h2>困ったときは</h2><p>よくある質問</p></div></div>
-  <p class="prose"><strong>Q. 編集した内容が他の端末に出てこない。</strong><br>A. 編集内容はその端末にのみ保存されます。端末ごとに個別の設定になります。</p><p class="prose"><strong>Q. オフラインで使えますか。</strong><br>A. オンライン専用です。起動にはインターネット接続が必要です（保存済みのカルテ・編集データ自体は端末内に残ります）。</p><p class="prose"><strong>Q. 治療穴やスコア、検査の分岐は信頼できますか。</strong><br>A. これらは学習・臨床補助のための参考値・候補です。標準的な解釈をもとにしていますが、確定的なものではありません。臨床では施術者の判断を優先してください。</p>
+  <p class="prose"><strong>Q. 編集した内容が他の端末に出てこない。</strong><br>A. 編集内容はその端末にのみ保存されます。端末ごとに個別の設定になります。</p><p class="prose"><strong>Q. オフラインで使えますか。</strong><br>A. オンライン専用です。起動にはインターネット接続が必要です（保存済みのカルテ・編集データ自体は端末内に残ります）。</p><p class="prose"><strong>Q. 治療穴やスコア、検査の分岐は信頼できますか。</strong><br>A. これらは学習・臨床補助のための参考値・候補です。標準的な解釈をもとにしていますが、確定的なものではありません。臨床では施術者の判断を優先してください。</p><p class="prose"><strong>Q. カルテが保存できません。</strong><br>A. 患者番号と氏名は必須です。どちらかが空欄だと保存できません。全角・半角や氏名の空白の有無は自動で吸収されるため、表記を揃える必要はありません。</p><p class="prose"><strong>Q. 弁証タブに何も出ません。</strong><br>A. 先に「症状」タブでチェックを入れてから、「↻ 弁証を再計算」を押してください。</p><p class="prose"><strong>Q. 文字が小さくて読みにくい。</strong><br>A. 画面上部の「A−／A＋」で文字サイズを5段階（小・標準・大・特大・最大）に変更できます。設定はこの端末に保存されます。</p><p class="prose"><strong>Q. アプリ内の「📖 使い方」と、この説明書の違いは？</strong><br>A. 内容は同じ趣旨です。アプリ内の「📖 使い方」（問診タブ）は要点をまとめたもの、この説明書はより詳しい解説です。</p>
 </div></div>
-<footer>東洋医学 学習スイート ／ 東洋医学 <em>弁証</em>支援アプリ<br>本アプリは学習・臨床補助用途です。表示される弁証・治療穴・検査は候補であり、確定診断ではありません。最終判断は施術者が行ってください。</footer>
+<footer>東洋医学 学習スイート ／ 東洋医学 <em>弁証・選穴</em>支援アプリ<br>本アプリは学習・臨床補助用途です。表示される弁証・治療穴・検査は候補であり、確定診断ではありません。最終判断は施術者が行ってください。</footer>
 <script>
 /* ===== コピー無効化（コンテンツ保護・他と同じ）===== */
 (function(){
