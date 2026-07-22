@@ -79,7 +79,7 @@
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>五行穴 読み上げアプリ</title>
+<title>経穴 読み上げアプリ</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;600&family=Noto+Sans+JP:wght@300;400;500&display=swap');
 
@@ -342,7 +342,7 @@
   .point-list { display: flex; flex-direction: column; gap: 3px; }
   .point-row {
     display: grid;
-    grid-template-columns: 1fr 90px 80px;
+    grid-template-columns: 1fr auto;
     gap: 6px;
     padding: 8px 12px;
     border-radius: 6px;
@@ -355,9 +355,12 @@
   .point-row:hover { background: var(--highlight); }
   .point-row.active { background: #fff8e8; border-color: var(--gold); }
   .point-row.rand-active { background: #e8f0f8; border-color: var(--rand); }
-  .point-row .r-meridian { color: var(--muted); font-size: .72rem; }
-  .point-row .r-type { color: var(--gold); font-size: .75rem; }
-  .point-row .r-name { font-family: 'Noto Serif JP', serif; font-size: .9rem; font-weight: 600; }
+  .point-row .r-meridian { color: var(--muted); font-size: .7rem; }
+  .point-row .r-q { color: var(--gold); font-size: .78rem; margin-top: 1px; }
+  .point-row .r-right { text-align: right; }
+  .point-row .r-name { font-family: 'Noto Serif JP', serif; font-size: .95rem; font-weight: 600; }
+  .point-row .r-read { color: var(--muted); font-size: .68rem; letter-spacing: .03em; }
+  .point-row .r-code { color: var(--muted); font-size: .62rem; margin-left: 5px; }
 
   .badge {
     display: inline-block;
@@ -388,16 +391,78 @@
   }
 
   @media (max-width: 500px) {
-    .point-row { grid-template-columns: 1fr 80px; }
-    .point-row .r-type { display: none; }
+    .point-row { grid-template-columns: 1fr auto; }
   }
+
+  /* ── 音源セット切替（上位タブ） ── */
+  .set-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .set-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 9px 6px;
+    border: 1.5px solid var(--line);
+    border-radius: 9px;
+    background: transparent;
+    font-family: 'Noto Serif JP', serif;
+    font-size: .92rem;
+    font-weight: 600;
+    letter-spacing: .08em;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .set-tab span {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: .62rem;
+    font-weight: 400;
+    letter-spacing: .04em;
+    opacity: .85;
+  }
+  .set-tab:hover:not(.active) { border-color: var(--gold); color: var(--gold); }
+  .set-tab.active { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+
+  /* ── 分類バッジ色 ── */
+  .badge.c-goyo  { background: var(--cinnabar); }
+  .badge.c-gego  { background: var(--sage); }
+  .badge.c-hakkai{ background: var(--gold); }
+  .badge.c-soshu { background: #2a5880; }
+  .badge.c-hasso { background: #7a5573; }
+
+  /* ── 読み確認一覧 ── */
+  .yomi-section { margin-top: 26px; border-top: 1px solid var(--line); padding-top: 14px; }
+  .yomi-section > summary {
+    cursor: pointer;
+    font-family: 'Noto Serif JP', serif;
+    font-size: .95rem;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: .08em;
+    list-style: none;
+  }
+  .yomi-section > summary::-webkit-details-marker { display: none; }
+  .yomi-section > summary::before { content: '▸ '; color: var(--gold); }
+  .yomi-section[open] > summary::before { content: '▾ '; }
+  .yomi-note { font-size: .72rem; color: var(--muted); margin: 8px 0 12px; line-height: 1.7; }
+  .yomi-group { font-family: 'Noto Serif JP', serif; font-size: .82rem; color: var(--cinnabar);
+    margin: 14px 0 6px; border-bottom: 1px solid var(--line); padding-bottom: 4px; letter-spacing: .08em; }
+  .yomi-row { padding: 5px 4px; border-bottom: 1px dotted var(--line); font-size: .78rem; }
+  .yomi-row .yq { color: var(--ink); }
+  .yomi-row .ya { font-family: 'Noto Serif JP', serif; font-weight: 600; }
+  .yomi-row .yk { display: block; color: var(--muted); font-size: .7rem; margin-top: 2px; letter-spacing: .04em; }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>五 行 穴</h1>
-  <p>井・榮・兪・経・合 — 全60穴 読み上げ</p>
+  <h1 id="hTitle">五 行 穴</h1>
+  <p id="hSub">井・榮・兪・経・合 — 全60穴 読み上げ</p>
   <div class="fs-ctrl">
     <button class="fs-minus" id="fsMinus" title="文字を小さく" aria-label="文字を小さく">A−</button>
     <span class="fs-label" id="fsLabel">標準</span>
@@ -410,6 +475,12 @@
 
 <div class="container">
 
+  <!-- 音源セット切替 -->
+  <div class="set-tabs">
+    <button class="set-tab active" id="setKaruta" onclick="setSet('karuta')">かるた用音声<span>五行穴 60</span></button>
+    <button class="set-tab" id="setAll" onclick="setSet('all')">全部入り<span>五行穴＋要穴 153</span></button>
+  </div>
+
   <!-- モード切替 -->
   <div class="mode-tabs">
     <button class="mode-tab active-seq" id="tabSeq" onclick="setMode('seq')">▶ 順番に読む</button>
@@ -418,7 +489,7 @@
 
   <!-- コントロール -->
   <div class="controls">
-    <div class="filter-row" id="filterRow">
+    <div class="filter-row" id="filterKaruta">
       <span style="font-size:.8rem;color:var(--muted)">絞り込み：</span>
       <button class="filter-btn active" data-filter="all">全経</button>
       <button class="filter-btn" data-filter="yin">陰経のみ</button>
@@ -428,6 +499,22 @@
       <button class="filter-btn" data-filter="兪">兪穴</button>
       <button class="filter-btn" data-filter="経">経穴</button>
       <button class="filter-btn" data-filter="合">合穴</button>
+    </div>
+
+    <div class="filter-row" id="filterAll" style="display:none">
+      <span style="font-size:.8rem;color:var(--muted)">絞り込み：</span>
+      <button class="filter-btn active" data-filter="all">全部</button>
+      <button class="filter-btn" data-filter="cat:五行穴">五行穴</button>
+      <button class="filter-btn" data-filter="cat:五要穴">五要穴</button>
+      <button class="filter-btn" data-filter="五要穴/原穴">原穴</button>
+      <button class="filter-btn" data-filter="五要穴/郄穴">郄穴</button>
+      <button class="filter-btn" data-filter="五要穴/絡穴">絡穴</button>
+      <button class="filter-btn" data-filter="五要穴/募穴">募穴</button>
+      <button class="filter-btn" data-filter="五要穴/兪穴">兪穴</button>
+      <button class="filter-btn" data-filter="cat:下合穴">下合穴</button>
+      <button class="filter-btn" data-filter="cat:八会穴">八会穴</button>
+      <button class="filter-btn" data-filter="cat:四総穴">四総穴</button>
+      <button class="filter-btn" data-filter="cat:八脈交会穴">八脈交会穴</button>
     </div>
 
     <!-- ランダム専用オプション（ランダムモード時のみ表示） -->
@@ -440,21 +527,21 @@
 
     <div class="speed-row">
       <span>速度：</span>
-      <input type="range" id="speedSlider" min="0.6" max="1.4" step="0.1" value="0.9">
+      <input type="range" id="speedSlider" min="0.6" max="2" step="0.1" value="0.9">
       <span id="speedVal">0.9×</span>
     </div>
-    <div class="speed-row">
-      <span style="white-space:nowrap">経名後：</span>
+    <div class="speed-row" id="rowP1">
+      <span style="white-space:nowrap" id="lblP1">経名後<small style="font-size:.72em;opacity:.75">（五行穴）</small>：</span>
       <input type="range" id="pause1Slider" min="0" max="3" step="0.25" value="1">
       <span id="pause1Val">1.0秒</span>
     </div>
     <div class="speed-row">
-      <span style="white-space:nowrap">穴種後：</span>
+      <span style="white-space:nowrap" id="lblP2">出題後：</span>
       <input type="range" id="pause2Slider" min="0" max="4" step="0.25" value="2">
       <span id="pause2Val">2.0秒</span>
     </div>
     <div class="speed-row">
-      <span style="white-space:nowrap">穴名後：</span>
+      <span style="white-space:nowrap" id="lblP3">解答後：</span>
       <input type="range" id="pause3Slider" min="0" max="6" step="0.25" value="3">
       <span id="pause3Val">3.0秒</span>
     </div>
@@ -486,6 +573,16 @@
     </h2>
     <div class="point-list" id="pointList"></div>
   </div>
+
+  <!-- 読み確認一覧 -->
+  <details class="yomi-section" id="yomiSection">
+    <summary>読み確認一覧（読み上げに使う かな）</summary>
+    <div class="yomi-note">
+      実際に読み上げる かな をそのまま並べています。「の」の有無や送りなど、直したい箇所を控えてご連絡ください。<br>
+      表示中のセット（かるた用／全部入り）に連動します。
+    </div>
+    <div id="yomiList"></div>
+  </details>
 
 </div>
 
@@ -606,16 +703,144 @@ const MERIDIANS = [
   ]},
 ];
 
-// フラットリスト
-let allPoints = [];
+// ──────────────────────────────────────────
+// 要穴データ（五要穴・下合穴・八会穴・四総穴・八脈交会穴）
+//   cat=分類 / sub=小分類 / q=出題テキスト / qr=出題の読み
+// ──────────────────────────────────────────
+const YOKETSU = [
+  {cat:'五要穴',sub:'原穴',q:'肝の原穴',qr:'かんの　げんけつ',name:'太衝',read:'たいしょう',code:'LR3',ji:'肝経',yy:'yin'},
+  {cat:'五要穴',sub:'原穴',q:'心の原穴',qr:'しんの　げんけつ',name:'神門',read:'しんもん',code:'HT7',ji:'心経',yy:'yin'},
+  {cat:'五要穴',sub:'原穴',q:'脾の原穴',qr:'ひの　げんけつ',name:'太白',read:'たいはく',code:'SP3',ji:'脾経',yy:'yin'},
+  {cat:'五要穴',sub:'原穴',q:'肺の原穴',qr:'はいの　げんけつ',name:'太淵',read:'たいえん',code:'LU9',ji:'肺経',yy:'yin'},
+  {cat:'五要穴',sub:'原穴',q:'腎の原穴',qr:'じんの　げんけつ',name:'太渓',read:'たいけい',code:'KI3',ji:'腎経',yy:'yin'},
+  {cat:'五要穴',sub:'原穴',q:'心包の原穴',qr:'しんぽうの　げんけつ',name:'大陵',read:'だいりょう',code:'PC7',ji:'心包経',yy:'yin'},
+  {cat:'五要穴',sub:'原穴',q:'胆の原穴',qr:'たんの　げんけつ',name:'丘墟',read:'きゅうきょ',code:'GB40',ji:'胆経',yy:'yang'},
+  {cat:'五要穴',sub:'原穴',q:'小腸の原穴',qr:'しょうちょうの　げんけつ',name:'腕骨',read:'わんこつ',code:'SI4',ji:'小腸経',yy:'yang'},
+  {cat:'五要穴',sub:'原穴',q:'胃の原穴',qr:'いの　げんけつ',name:'衝陽',read:'しょうよう',code:'ST42',ji:'胃経',yy:'yang'},
+  {cat:'五要穴',sub:'原穴',q:'大腸の原穴',qr:'だいちょうの　げんけつ',name:'合谷',read:'ごうこく',code:'LI4',ji:'大腸経',yy:'yang'},
+  {cat:'五要穴',sub:'原穴',q:'膀胱の原穴',qr:'ぼうこうの　げんけつ',name:'京骨',read:'けいこつ',code:'BL64',ji:'膀胱経',yy:'yang'},
+  {cat:'五要穴',sub:'原穴',q:'三焦の原穴',qr:'さんしょうの　げんけつ',name:'陽池',read:'ようち',code:'TE4',ji:'三焦経',yy:'yang'},
+  {cat:'五要穴',sub:'郄穴',q:'肝の郄穴',qr:'かんの　げきけつ',name:'中都',read:'ちゅうと',code:'LR6',ji:'肝経',yy:'yin'},
+  {cat:'五要穴',sub:'郄穴',q:'心の郄穴',qr:'しんの　げきけつ',name:'陰郄',read:'いんげき',code:'HT6',ji:'心経',yy:'yin'},
+  {cat:'五要穴',sub:'郄穴',q:'脾の郄穴',qr:'ひの　げきけつ',name:'地機',read:'ちき',code:'SP8',ji:'脾経',yy:'yin'},
+  {cat:'五要穴',sub:'郄穴',q:'肺の郄穴',qr:'はいの　げきけつ',name:'孔最',read:'こうさい',code:'LU6',ji:'肺経',yy:'yin'},
+  {cat:'五要穴',sub:'郄穴',q:'腎の郄穴',qr:'じんの　げきけつ',name:'水泉',read:'すいせん',code:'KI5',ji:'腎経',yy:'yin'},
+  {cat:'五要穴',sub:'郄穴',q:'心包の郄穴',qr:'しんぽうの　げきけつ',name:'郄門',read:'げきもん',code:'PC4',ji:'心包経',yy:'yin'},
+  {cat:'五要穴',sub:'郄穴',q:'胆の郄穴',qr:'たんの　げきけつ',name:'外丘',read:'がいきゅう',code:'GB36',ji:'胆経',yy:'yang'},
+  {cat:'五要穴',sub:'郄穴',q:'小腸の郄穴',qr:'しょうちょうの　げきけつ',name:'養老',read:'ようろう',code:'SI6',ji:'小腸経',yy:'yang'},
+  {cat:'五要穴',sub:'郄穴',q:'胃の郄穴',qr:'いの　げきけつ',name:'梁丘',read:'りょうきゅう',code:'ST34',ji:'胃経',yy:'yang'},
+  {cat:'五要穴',sub:'郄穴',q:'大腸の郄穴',qr:'だいちょうの　げきけつ',name:'温溜',read:'おんる',code:'LI7',ji:'大腸経',yy:'yang'},
+  {cat:'五要穴',sub:'郄穴',q:'膀胱の郄穴',qr:'ぼうこうの　げきけつ',name:'金門',read:'きんもん',code:'BL63',ji:'膀胱経',yy:'yang'},
+  {cat:'五要穴',sub:'郄穴',q:'三焦の郄穴',qr:'さんしょうの　げきけつ',name:'会宗',read:'えそう',code:'TE7',ji:'三焦経',yy:'yang'},
+  {cat:'五要穴',sub:'郄穴',q:'陰維脈の郄穴',qr:'いん いみゃくの　げきけつ',name:'築賓',read:'ちくひん',code:'KI9',ji:'腎経',yy:'yin'},
+  {cat:'五要穴',sub:'郄穴',q:'陽維脈の郄穴',qr:'よう いみゃくの　げきけつ',name:'陽交',read:'ようこう',code:'GB35',ji:'胆経',yy:'yang'},
+  {cat:'五要穴',sub:'郄穴',q:'陽蹻脈の郄穴',qr:'ようきょうみゃくの　げきけつ',name:'跗陽',read:'ふよう',code:'BL59',ji:'膀胱経',yy:'yang'},
+  {cat:'五要穴',sub:'郄穴',q:'陰蹻脈の郄穴',qr:'いんきょうみゃくの　げきけつ',name:'交信',read:'こうしん',code:'KI8',ji:'腎経',yy:'yin'},
+  {cat:'五要穴',sub:'絡穴',q:'肝の絡穴',qr:'かんの　らっけつ',name:'蠡溝',read:'れいこう',code:'LR5',ji:'肝経',yy:'yin'},
+  {cat:'五要穴',sub:'絡穴',q:'心の絡穴',qr:'しんの　らっけつ',name:'通里',read:'つうり',code:'HT5',ji:'心経',yy:'yin'},
+  {cat:'五要穴',sub:'絡穴',q:'脾の絡穴',qr:'ひの　らっけつ',name:'公孫',read:'こうそん',code:'SP4',ji:'脾経',yy:'yin'},
+  {cat:'五要穴',sub:'絡穴',q:'肺の絡穴',qr:'はいの　らっけつ',name:'列欠',read:'れっけつ',code:'LU7',ji:'肺経',yy:'yin'},
+  {cat:'五要穴',sub:'絡穴',q:'腎の絡穴',qr:'じんの　らっけつ',name:'大鍾',read:'だいしょう',code:'KI4',ji:'腎経',yy:'yin'},
+  {cat:'五要穴',sub:'絡穴',q:'心包の絡穴',qr:'しんぽうの　らっけつ',name:'内関',read:'ないかん',code:'PC6',ji:'心包経',yy:'yin'},
+  {cat:'五要穴',sub:'絡穴',q:'胆の絡穴',qr:'たんの　らっけつ',name:'光明',read:'こうめい',code:'GB37',ji:'胆経',yy:'yang'},
+  {cat:'五要穴',sub:'絡穴',q:'小腸の絡穴',qr:'しょうちょうの　らっけつ',name:'支正',read:'しせい',code:'SI7',ji:'小腸経',yy:'yang'},
+  {cat:'五要穴',sub:'絡穴',q:'胃の絡穴',qr:'いの　らっけつ',name:'豊隆',read:'ほうりゅう',code:'ST40',ji:'胃経',yy:'yang'},
+  {cat:'五要穴',sub:'絡穴',q:'大腸の絡穴',qr:'だいちょうの　らっけつ',name:'偏歴',read:'へんれき',code:'LI6',ji:'大腸経',yy:'yang'},
+  {cat:'五要穴',sub:'絡穴',q:'膀胱の絡穴',qr:'ぼうこうの　らっけつ',name:'飛揚',read:'ひよう',code:'BL58',ji:'膀胱経',yy:'yang'},
+  {cat:'五要穴',sub:'絡穴',q:'三焦の絡穴',qr:'さんしょうの　らっけつ',name:'外関',read:'がいかん',code:'TE5',ji:'三焦経',yy:'yang'},
+  {cat:'五要穴',sub:'絡穴',q:'督脈の絡穴',qr:'とくみゃくの　らっけつ',name:'長強',read:'ちょうきょう',code:'GV1',ji:'',yy:''},
+  {cat:'五要穴',sub:'絡穴',q:'任脈の絡穴',qr:'にんみゃくの　らっけつ',name:'鳩尾',read:'きゅうび',code:'CV15',ji:'',yy:''},
+  {cat:'五要穴',sub:'絡穴',q:'脾の大絡の絡穴',qr:'ひの　だいらくの　らっけつ',name:'大包',read:'だいほう',code:'SP21',ji:'',yy:''},
+  {cat:'五要穴',sub:'募穴',q:'肝の募穴',qr:'かんの　ぼけつ',name:'期門',read:'きもん',code:'LR14',ji:'肝経',yy:'yin'},
+  {cat:'五要穴',sub:'募穴',q:'心の募穴',qr:'しんの　ぼけつ',name:'巨闕',read:'こけつ',code:'CV14',ji:'任脈',yy:'yin'},
+  {cat:'五要穴',sub:'募穴',q:'脾の募穴',qr:'ひの　ぼけつ',name:'章門',read:'しょうもん',code:'LR13',ji:'肝経',yy:'yin'},
+  {cat:'五要穴',sub:'募穴',q:'肺の募穴',qr:'はいの　ぼけつ',name:'中府',read:'ちゅうふ',code:'LU1',ji:'肺経',yy:'yin'},
+  {cat:'五要穴',sub:'募穴',q:'腎の募穴',qr:'じんの　ぼけつ',name:'京門',read:'けいもん',code:'GB25',ji:'胆経',yy:'yin'},
+  {cat:'五要穴',sub:'募穴',q:'心包の募穴',qr:'しんぽうの　ぼけつ',name:'膻中',read:'だんちゅう',code:'CV17',ji:'任脈',yy:'yin'},
+  {cat:'五要穴',sub:'募穴',q:'胆の募穴',qr:'たんの　ぼけつ',name:'日月',read:'じつげつ',code:'GB24',ji:'胆経',yy:'yang'},
+  {cat:'五要穴',sub:'募穴',q:'小腸の募穴',qr:'しょうちょうの　ぼけつ',name:'関元',read:'かんげん',code:'CV4',ji:'任脈',yy:'yang'},
+  {cat:'五要穴',sub:'募穴',q:'胃の募穴',qr:'いの　ぼけつ',name:'中脘',read:'ちゅうかん',code:'CV12',ji:'任脈',yy:'yang'},
+  {cat:'五要穴',sub:'募穴',q:'大腸の募穴',qr:'だいちょうの　ぼけつ',name:'天枢',read:'てんすう',code:'ST25',ji:'胃経',yy:'yang'},
+  {cat:'五要穴',sub:'募穴',q:'膀胱の募穴',qr:'ぼうこうの　ぼけつ',name:'中極',read:'ちゅうきょく',code:'CV3',ji:'任脈',yy:'yang'},
+  {cat:'五要穴',sub:'募穴',q:'三焦の募穴',qr:'さんしょうの　ぼけつ',name:'石門',read:'せきもん',code:'CV5',ji:'任脈',yy:'yang'},
+  {cat:'五要穴',sub:'兪穴',q:'肝の兪穴',qr:'かんの　ゆけつ',name:'肝兪',read:'かんゆ',code:'BL18',ji:'膀胱経',yy:'yin'},
+  {cat:'五要穴',sub:'兪穴',q:'心の兪穴',qr:'しんの　ゆけつ',name:'心兪',read:'しんゆ',code:'BL15',ji:'膀胱経',yy:'yin'},
+  {cat:'五要穴',sub:'兪穴',q:'脾の兪穴',qr:'ひの　ゆけつ',name:'脾兪',read:'ひゆ',code:'BL20',ji:'膀胱経',yy:'yin'},
+  {cat:'五要穴',sub:'兪穴',q:'肺の兪穴',qr:'はいの　ゆけつ',name:'肺兪',read:'はいゆ',code:'BL13',ji:'膀胱経',yy:'yin'},
+  {cat:'五要穴',sub:'兪穴',q:'腎の兪穴',qr:'じんの　ゆけつ',name:'腎兪',read:'じんゆ',code:'BL23',ji:'膀胱経',yy:'yin'},
+  {cat:'五要穴',sub:'兪穴',q:'心包の兪穴',qr:'しんぽうの　ゆけつ',name:'厥陰兪',read:'けついんゆ',code:'BL14',ji:'膀胱経',yy:'yin'},
+  {cat:'五要穴',sub:'兪穴',q:'胆の兪穴',qr:'たんの　ゆけつ',name:'胆兪',read:'たんゆ',code:'BL19',ji:'膀胱経',yy:'yang'},
+  {cat:'五要穴',sub:'兪穴',q:'小腸の兪穴',qr:'しょうちょうの　ゆけつ',name:'小腸兪',read:'しょうちょうゆ',code:'BL27',ji:'膀胱経',yy:'yang'},
+  {cat:'五要穴',sub:'兪穴',q:'胃の兪穴',qr:'いの　ゆけつ',name:'胃兪',read:'いゆ',code:'BL21',ji:'膀胱経',yy:'yang'},
+  {cat:'五要穴',sub:'兪穴',q:'大腸の兪穴',qr:'だいちょうの　ゆけつ',name:'大腸兪',read:'だいちょうゆ',code:'BL25',ji:'膀胱経',yy:'yang'},
+  {cat:'五要穴',sub:'兪穴',q:'膀胱の兪穴',qr:'ぼうこうの　ゆけつ',name:'膀胱兪',read:'ぼうこうゆ',code:'BL28',ji:'膀胱経',yy:'yang'},
+  {cat:'五要穴',sub:'兪穴',q:'三焦の兪穴',qr:'さんしょうの　ゆけつ',name:'三焦兪',read:'さんしょうゆ',code:'BL22',ji:'膀胱経',yy:'yang'},
+  {cat:'下合穴',sub:'下合穴',q:'胆の下合穴',qr:'たんの　しもごうけつ',name:'陽陵泉',read:'ようりょうせん',code:'GB34',ji:'胆経',yy:'yang'},
+  {cat:'下合穴',sub:'下合穴',q:'小腸の下合穴',qr:'しょうちょうの　しもごうけつ',name:'下巨虚',read:'げこきょ',code:'ST39',ji:'胃経',yy:'yang'},
+  {cat:'下合穴',sub:'下合穴',q:'胃の下合穴',qr:'いの　しもごうけつ',name:'足三里',read:'あしさんり',code:'ST36',ji:'胃経',yy:'yang'},
+  {cat:'下合穴',sub:'下合穴',q:'大腸の下合穴',qr:'だいちょうの　しもごうけつ',name:'上巨虚',read:'じょうこきょ',code:'ST37',ji:'胃経',yy:'yang'},
+  {cat:'下合穴',sub:'下合穴',q:'膀胱の下合穴',qr:'ぼうこうの　しもごうけつ',name:'委中',read:'いちゅう',code:'BL40',ji:'膀胱経',yy:'yang'},
+  {cat:'下合穴',sub:'下合穴',q:'三焦の下合穴',qr:'さんしょうの　しもごうけつ',name:'委陽',read:'いよう',code:'BL39',ji:'膀胱経',yy:'yang'},
+  {cat:'八会穴',sub:'腑会',q:'八会穴の腑会',qr:'はちえけつの　ふえ',name:'中脘',read:'ちゅうかん',code:'CV12',ji:'任脈',yy:''},
+  {cat:'八会穴',sub:'臓会',q:'八会穴の臓会',qr:'はちえけつの　ぞうえ',name:'章門',read:'しょうもん',code:'LR13',ji:'肝経',yy:''},
+  {cat:'八会穴',sub:'筋会',q:'八会穴の筋会',qr:'はちえけつの　きん え',name:'陽陵泉',read:'ようりょうせん',code:'GB34',ji:'胆経',yy:''},
+  {cat:'八会穴',sub:'髄会',q:'八会穴の髄会',qr:'はちえけつの　ずいえ',name:'懸鍾',read:'けんしょう',code:'GB39',ji:'胆経',yy:''},
+  {cat:'八会穴',sub:'血会',q:'八会穴の血会',qr:'はちえけつの　けつえ',name:'膈兪',read:'かくゆ',code:'BL17',ji:'膀胱経',yy:''},
+  {cat:'八会穴',sub:'骨会',q:'八会穴の骨会',qr:'はちえけつの　こつえ',name:'大杼',read:'だいじょ',code:'BL11',ji:'膀胱経',yy:''},
+  {cat:'八会穴',sub:'脈会',q:'八会穴の脈会',qr:'はちえけつの　みゃくえ',name:'太淵',read:'たいえん',code:'LU9',ji:'肺経',yy:''},
+  {cat:'八会穴',sub:'気会',q:'八会穴の気会',qr:'はちえけつの　き え',name:'膻中',read:'だんちゅう',code:'CV17',ji:'任脈',yy:''},
+  {cat:'四総穴',sub:'肚腹',q:'四総穴の肚腹',qr:'しそうけつの　とふく',name:'足三里',read:'あしさんり',code:'ST36',ji:'胃経',yy:''},
+  {cat:'四総穴',sub:'腰背',q:'四総穴の腰背',qr:'しそうけつの　ようはい',name:'委中',read:'いちゅう',code:'BL40',ji:'膀胱経',yy:''},
+  {cat:'四総穴',sub:'頭項',q:'四総穴の頭項',qr:'しそうけつの　とうこう',name:'列欠',read:'れっけつ',code:'LU7',ji:'肺経',yy:''},
+  {cat:'四総穴',sub:'面口',q:'四総穴の面口',qr:'しそうけつの　めんこう',name:'合谷',read:'ごうこく',code:'LI4',ji:'大腸経',yy:''},
+  {cat:'八脈交会穴',sub:'衝脈',q:'衝脈の八脈交会穴',qr:'しょうみゃくの　はちみゃく　こうえけつ',name:'公孫',read:'こうそん',code:'SP4',ji:'脾経',yy:''},
+  {cat:'八脈交会穴',sub:'陰維脈',q:'陰維脈の八脈交会穴',qr:'いん いみゃくの　はちみゃく　こうえけつ',name:'内関',read:'ないかん',code:'PC6',ji:'心包経',yy:''},
+  {cat:'八脈交会穴',sub:'帯脈',q:'帯脈の八脈交会穴',qr:'たいみゃくの　はちみゃく　こうえけつ',name:'足臨泣',read:'あしりんきゅう',code:'GB41',ji:'胆経',yy:''},
+  {cat:'八脈交会穴',sub:'陽維脈',q:'陽維脈の八脈交会穴',qr:'よう いみゃくの　はちみゃく　こうえけつ',name:'外関',read:'がいかん',code:'TE5',ji:'三焦経',yy:''},
+  {cat:'八脈交会穴',sub:'督脈',q:'督脈の八脈交会穴',qr:'とくみゃくの　はちみゃく　こうえけつ',name:'後渓',read:'こうけい',code:'SI3',ji:'小腸経',yy:''},
+  {cat:'八脈交会穴',sub:'陽蹻脈',q:'陽蹻脈の八脈交会穴',qr:'ようきょうみゃくの　はちみゃく　こうえけつ',name:'申脈',read:'しんみゃく',code:'BL62',ji:'膀胱経',yy:''},
+  {cat:'八脈交会穴',sub:'任脈',q:'任脈の八脈交会穴',qr:'にんみゃくの　はちみゃく　こうえけつ',name:'列欠',read:'れっけつ',code:'LU7',ji:'肺経',yy:''},
+  {cat:'八脈交会穴',sub:'陰蹻脈',q:'陰蹻脈の八脈交会穴',qr:'いんきょうみゃくの　はちみゃく　こうえけつ',name:'照海',read:'しょうかい',code:'KI6',ji:'腎経',yy:''},
+];
+
+// ──────────────────────────────────────────
+// 再生アイテムへ正規化
+//   head/headRead … 1段目（経名。要穴では空）
+//   q/qRead       … 出題（穴種 or 属性）
+//   name/read     … 解答（穴名）
+// ──────────────────────────────────────────
+const GOGYO_ITEMS = [];
 MERIDIANS.forEach(m => {
   m.points.forEach(p => {
-    allPoints.push({ ...p, kei: m.kei, keiYomi: m.yomi, yin: m.yin });
+    GOGYO_ITEMS.push({
+      cat: '五行穴', sub: p.type + '穴',
+      head: m.kei, headRead: m.yomi,
+      q: `${p.type}${p.go}穴`, qRead: `${TYPE_READ[p.type]}　${GO_READ[p.go]}けつ`,
+      name: p.name, read: p.read, code: '', ji: m.kei,
+      go: p.go, type: p.type, yin: m.yin
+    });
   });
 });
+const YOKETSU_ITEMS = YOKETSU.map(r => ({
+  cat: r.cat, sub: r.sub,
+  head: '', headRead: '',
+  q: r.q, qRead: r.qr,
+  name: r.name, read: r.read, code: r.code, ji: r.ji,
+  go: '', type: '', yin: r.yy === 'yin' ? true : (r.yy === 'yang' ? false : null)
+}));
+
+const SETS = {
+  karuta: GOGYO_ITEMS,
+  all:    GOGYO_ITEMS.concat(YOKETSU_ITEMS)
+};
+const SET_INFO = {
+  karuta: { title:'五 行 穴', sub:'井・榮・兪・経・合 — 全60穴 読み上げ' },
+  all:    { title:'要 穴 総 覧', sub:'五行穴・五要穴・下合穴・八会穴・四総穴・八脈交会穴 — 全153項目' }
+};
 
 // ── 状態 ──
-let filteredPoints = [...allPoints];
+let currentSet = 'karuta';
+let filteredPoints = [...SETS.karuta];
 let currentIdx = 0;
 let isPlaying = false;
 let stopFlag = false;
@@ -650,9 +875,39 @@ pause3Slider.addEventListener('input', () => {
   pause3Val.textContent = parseFloat(pause3Slider.value).toFixed(2).replace(/\.?0+$/, '') + '秒';
 });
 
-// ── 五行クラス ──
+// ── 五行クラス／分類クラス ──
 function goClass(go) {
   return {木:'wood',火:'fire',土:'earth',金:'metal',水:'water'}[go] || '';
+}
+function catClass(cat) {
+  return {'五要穴':'c-goyo','下合穴':'c-gego','八会穴':'c-hakkai','四総穴':'c-soshu','八脈交会穴':'c-hasso'}[cat] || '';
+}
+function dotClass(p) { return p.cat === '五行穴' ? goClass(p.go) : catClass(p.cat); }
+// カタカナ→ひらがな・区切りスペース除去（画面表示用）
+function hira(s) {
+  return (s || '').replace(/　/g,'').replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
+}
+
+// ── 音源セット切替 ──
+function setSet(set) {
+  if (currentSet === set) return;
+  currentSet = set;
+  stopAll();
+
+  document.getElementById('setKaruta').classList.toggle('active', set === 'karuta');
+  document.getElementById('setAll').classList.toggle('active', set === 'all');
+  document.getElementById('filterKaruta').style.display = set === 'karuta' ? 'flex' : 'none';
+  document.getElementById('filterAll').style.display    = set === 'all'    ? 'flex' : 'none';
+
+  document.getElementById('hTitle').textContent = SET_INFO[set].title;
+  document.getElementById('hSub').textContent   = SET_INFO[set].sub;
+
+  // 絞り込みを「全部」に戻す
+  const row = document.getElementById(set === 'karuta' ? 'filterKaruta' : 'filterAll');
+  row.querySelectorAll('.filter-btn').forEach((b, i) => b.classList.toggle('active', i === 0));
+
+  applyFilter('all');
+  renderYomiList();
 }
 
 // ── モード切替 ──
@@ -704,18 +959,38 @@ function setMode(mode) {
 }
 
 // ── フィルタ ──
-document.getElementById('filterRow').querySelectorAll('.filter-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    applyFilter(btn.dataset.filter);
+['filterKaruta','filterAll'].forEach(id => {
+  document.getElementById(id).querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById(id).querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      applyFilter(btn.dataset.filter);
+    });
   });
 });
 function applyFilter(f) {
-  if (f === 'all')  filteredPoints = [...allPoints];
-  else if (f === 'yin')  filteredPoints = allPoints.filter(p => p.yin);
-  else if (f === 'yang') filteredPoints = allPoints.filter(p => !p.yin);
-  else filteredPoints = allPoints.filter(p => p.type === f);
+  const src = SETS[currentSet];
+  if (f === 'all')       filteredPoints = [...src];
+  else if (f === 'yin')  filteredPoints = src.filter(p => p.yin === true);
+  else if (f === 'yang') filteredPoints = src.filter(p => p.yin === false);
+  else if (f.startsWith('cat:')) filteredPoints = src.filter(p => p.cat === f.slice(4));
+  else if (f.includes('/')) {
+    const [c, sb] = f.split('/');
+    filteredPoints = src.filter(p => p.cat === c && p.sub === sb);
+  }
+  else filteredPoints = src.filter(p => p.type === f);
+
+  // ランダム出題数：上限を追従させ、既定は「全部」
+  //   前回の上限と同じ数（＝手で変えていない）なら新しい全件数へ。
+  //   手入力した数はできるだけ残し、上限を超えるときだけ丸める。
+  const rc = document.getElementById('randCount');
+  const n  = filteredPoints.length;
+  const prevMax = parseInt(rc.max, 10) || 0;
+  const wasFull = parseInt(rc.value, 10) === prevMax;
+  const cur = parseInt(rc.value, 10);
+  rc.max = n;
+  if (wasFull || !cur || cur > n) rc.value = n;
+
   currentIdx = 0;
   randQueue = [];
   randPos = 0;
@@ -765,11 +1040,13 @@ function renderList() {
     row.id = 'row-' + i;
     row.innerHTML = `
       <div>
-        <div class="r-meridian">${p.kei}</div>
-        <div><span class="badge ${goClass(p.go)}"></span><span class="r-name">${p.name}</span></div>
+        <div class="r-meridian">${p.head || p.cat}</div>
+        <div class="r-q"><span class="badge ${dotClass(p)}"></span>${p.q}</div>
       </div>
-      <div class="r-type">${p.type}${p.go}穴</div>
-      <div style="font-size:.72rem;color:var(--muted)">${p.read}</div>
+      <div class="r-right">
+        <div class="r-name">${p.name}${p.code ? `<span class="r-code">${p.code}</span>` : ''}</div>
+        <div class="r-read">${p.read}</div>
+      </div>
     `;
     row.addEventListener('click', () => {
       if (currentMode === 'seq') jumpTo(i);
@@ -799,15 +1076,18 @@ function updateNowPlaying(p, randInfo) {
   np.className = 'now-playing' + (currentMode === 'rand' ? ' rand-border' : '');
   const typeColor = currentMode === 'rand' ? 'rand-color' : '';
   const randBadge = randInfo ? `<div class="rand-label">🔀 ランダム ${randInfo}</div>` : '';
+  const kana = [hira(p.headRead), hira(p.qRead), p.read].filter(Boolean).join('　');
+  const foot = p.code ? `${p.ji}　${p.code}` : '';
   np.innerHTML = `
     ${randBadge}
-    <div class="meridian">${p.kei}</div>
+    <div class="meridian">${p.head || p.cat}</div>
     <div class="ketsu-type ${typeColor}">
-      <span class="badge ${goClass(p.go)}" style="width:10px;height:10px"></span>
-      ${p.type}${p.go}穴
+      <span class="badge ${dotClass(p)}" style="width:10px;height:10px"></span>
+      ${p.q}
     </div>
     <div class="point-name">${p.name}</div>
-    <div class="reading">${p.keiYomi.replace(/　/g,'').replace(/[ァ-ヶ]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60))}　${TYPE_READ[p.type]}${GO_READ[p.go]}けつ　${p.read}</div>
+    <div class="reading">${kana}</div>
+    ${foot ? `<div class="meridian">${foot}</div>` : ''}
   `;
   // ハイライト
   document.querySelectorAll('.point-row').forEach(r => r.classList.remove('active','rand-active'));
@@ -858,23 +1138,20 @@ async function speakOne(p, flatIdx, onDone) {
   const myEpoch = playEpoch;
   const stale = () => stopFlag || myEpoch !== playEpoch;
   const rate  = parseFloat(speedSlider.value);
-  const gap1  = parseFloat(pause1Slider.value) * 1000;   // 経名後
-  const gap2  = parseFloat(pause2Slider.value) * 1000;   // 穴種後
-  const typeRead = TYPE_READ[p.type] || p.type;
-  const goRead   = GO_READ[p.go]     || p.go;
-  const keiText  = p.keiYomi;                            // 経名
-  const typeText = `${typeRead}　${goRead}けつ`;            // 穴種
-  const nameText = p.read;                               // 穴名
+  const gap1  = parseFloat(pause1Slider.value) * 1000;   // 経名後（1段目がある場合のみ）
+  const gap2  = parseFloat(pause2Slider.value) * 1000;   // 出題後（＝解答までの間）
 
-  await speak(keiText, rate);
-  if (stale()) return;
-  if (gap1 > 0) await delay(gap1);
-  if (stale()) return;
-  await speak(typeText, rate);
+  if (p.headRead) {
+    await speak(p.headRead, rate);
+    if (stale()) return;
+    if (gap1 > 0) await delay(gap1);
+    if (stale()) return;
+  }
+  await speak(p.qRead, rate);
   if (stale()) return;
   if (gap2 > 0) await delay(gap2);
   if (stale()) return;
-  await speak(nameText, rate);
+  await speak(p.read, rate);
   if (stale()) return;
   if (onDone) onDone();
 }
@@ -1023,9 +1300,29 @@ function resetPlay() {
   resetNowPlaying();
 }
 
+// ── 読み確認一覧 ──
+function renderYomiList() {
+  const box = document.getElementById('yomiList');
+  if (!box) return;
+  const src = SETS[currentSet];
+  let html = '';
+  let lastKey = '';
+  src.forEach(p => {
+    const key = p.cat === '五行穴' ? '五行穴' : (p.cat === '五要穴' ? '五要穴／' + p.sub : p.cat);
+    if (key !== lastKey) { html += `<div class="yomi-group">${key}</div>`; lastKey = key; }
+    const q = [p.head, p.q].filter(Boolean).join('　');
+    const k = [hira(p.headRead), hira(p.qRead), p.read].filter(Boolean).join('　');
+    html += `<div class="yomi-row"><span class="yq">${q}</span> → <span class="ya">${p.name}</span>` +
+            `<span class="yk">${k}</span></div>`;
+  });
+  box.innerHTML = html;
+}
+
 // 初期化
 renderList();
 updateProgress();
+renderYomiList();
+(function(){ const rc=document.getElementById('randCount'); rc.max=filteredPoints.length; rc.value=filteredPoints.length; })();
 
 // ===== 自動バージョン確認（直接起動時・バックグラウンド復帰時・30分ごと）=====
 // iframe内（統合ホーム経由）は親が管理するためスキップ。直接URLで開いた場合のみ動作。
