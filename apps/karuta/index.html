@@ -1449,27 +1449,57 @@ function togglePlay() {
   }
 }
 
+// ── 一時停止中の表示専用ナビ（音声は再生しない。再生開始で続きから読む）──
+function showSeqAt(i) {
+  if (!filteredPoints.length) return;
+  currentIdx = Math.max(0, Math.min(filteredPoints.length - 1, i));
+  updateNowPlaying(filteredPoints[currentIdx], null);
+  updateProgress();
+}
+function showRandAt(pos) {
+  if (randQueue.length === 0) buildRandQueue();
+  if (randQueue.length === 0) return;
+  randPos = Math.max(0, Math.min(randQueue.length - 1, pos));
+  randStarted = false;   // 再生開始したとき、この1問から読み上げる
+  updateNowPlaying(randQueue[randPos], `${randPos + 1} / ${randQueue.length}`);
+  updateProgress();
+}
+
 function prevPoint() {
-  stopAll();
-  if (currentMode === 'seq') {
-    currentIdx = Math.max(0, currentIdx - 1);
-    isPlaying = true;
-    setPauseIcon();
-    playSeq();
+  if (isPlaying) {
+    // 再生中：停止して1問戻り、そのまま再生
+    stopAll();
+    if (currentMode === 'seq') {
+      currentIdx = Math.max(0, currentIdx - 1);
+      isPlaying = true;
+      setPauseIcon();
+      playSeq();
+    } else {
+      prevRand();
+    }
   } else {
-    prevRand();
+    // 一時停止中：表示だけ1問戻す（音声は流さない）
+    if (currentMode === 'seq') showSeqAt(currentIdx - 1);
+    else                       showRandAt(randPos - 1);
   }
 }
 
 function nextPoint() {
-  stopAll();
-  if (currentMode === 'seq') {
-    currentIdx = Math.min(filteredPoints.length - 1, currentIdx + 1);
-    isPlaying = true;
-    setPauseIcon();
-    playSeq();
+  if (isPlaying) {
+    // 再生中：停止して1問進み、そのまま再生
+    stopAll();
+    if (currentMode === 'seq') {
+      currentIdx = Math.min(filteredPoints.length - 1, currentIdx + 1);
+      isPlaying = true;
+      setPauseIcon();
+      playSeq();
+    } else {
+      nextRand();
+    }
   } else {
-    nextRand();
+    // 一時停止中：表示だけ1問進める（音声は流さない）
+    if (currentMode === 'seq') showSeqAt(currentIdx + 1);
+    else                       showRandAt(randPos + 1);
   }
 }
 
