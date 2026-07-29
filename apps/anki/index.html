@@ -451,6 +451,9 @@
     padding:9px 14px;font-size:calc(12px*var(--fs));font-weight:700;cursor:pointer;white-space:nowrap;
     font-family:'Zen Kaku Gothic New';transition:.15s;flex:none}
   .ryaku-allbtn.on{background:var(--cinnabar);color:var(--paper)}
+  .yoketu-ctrl{gap:6px;flex-wrap:wrap;margin-bottom:10px}
+  .yoketu-ctrl-label{font-size:calc(12px*var(--fs));font-weight:700;color:#6b5d4f;margin-right:2px;white-space:nowrap}
+  .yoketu-allbtn{padding:8px 14px}
   .ryaku-card{display:grid;grid-template-columns:128px 1fr;gap:0;border:1px solid var(--line);border-radius:11px;
     overflow:hidden;margin-bottom:9px;background:var(--paper);box-shadow:1.5px 2px 0 var(--shadow);cursor:pointer;
     transition:background .15s}
@@ -590,6 +593,12 @@
     </section>
     <section class="panel" id="t2">
       <p class="hint">セルを<b>タップ</b>→経穴名　もう一度<b>タップ</b>→場所／下部の表は行を<b>タップ</b>で解答</p>
+      <div class="ryaku-ctrl yoketu-ctrl">
+        <span class="yoketu-ctrl-label">一括表示</span>
+        <button class="ryaku-allbtn yoketu-allbtn on" data-stage="0">？</button>
+        <button class="ryaku-allbtn yoketu-allbtn" data-stage="1">経穴名</button>
+        <button class="ryaku-allbtn yoketu-allbtn" data-stage="2">部位</button>
+      </div>
       <div id="yoketuArea"></div>
     </section>
     <section class="panel" id="t4">
@@ -601,7 +610,10 @@
       <p class="kotsu-note">※同身寸：中指の第1・2指節間の横紋間（または母指の横幅）を1寸とする目安。骨度法は身長・体格によらず各部位を一定の寸数に分割して経穴を取る方法。</p>
     </section>
     <section class="panel" id="t3">
-      <p class="hint">カテゴリ見出しを<b>タップ</b>で開閉／各行を<b>タップ</b>で起始→停止→作用→支配神経→経穴を順に表示</p>
+      <p class="hint">カテゴリ見出しを<b>タップ</b>で開閉／各行を<b>タップ</b>で <b>？</b>↔内容（起始・停止・作用・支配神経・経穴）を切替</p>
+      <div class="ryaku-ctrl" style="margin-bottom:10px;">
+        <button class="ryaku-allbtn" id="muscleAll">すべて開く</button>
+      </div>
       <div id="muscleArea"></div>
     </section>
     <section class="panel" id="t5">
@@ -2833,61 +2845,91 @@ function buildHassoTable(){
     `<td class="k">${p.m2}</td></tr>`).join('');
   return `<div class="simple-table"><h3>${g.title}</h3><table>${head}${rows}</table></div>`;
 }
+// 要穴表セル：指定ステージ(0:？ 1:経穴名 2:場所)で描画する共通ヘルパー群
+function goyuCellData(cell){
+  const t=cell.dataset.t,r=+cell.dataset.r,ci=+cell.dataset.c;
+  if(t==='goyuYin')return goyu.yin[r].cells[ci];
+  if(t==='goyuYang')return goyu.yang[r].cells[ci];
+  if(t==='goyoYin')return goyo.yin[r].cells[ci];
+  if(t==='goyoYang')return goyo.yang[r].cells[ci];
+  if(t==='extraRaku')return goyo.extraRaku[r].cell;
+  return goyo.extraGeki[r].cell;
+}
+function drawCell(cell,s){
+  const d=goyuCellData(cell);cell.dataset.stage=s;
+  const jiTxt=d.ji?`<span class="ji">(${d.ji})</span>`:'';
+  if(s===0)cell.innerHTML=`<span class="tap0">？</span>`;
+  else if(s===1)cell.innerHTML=`<div><span class="yomi">${d.yomi}</span><span class="name">${d.name}</span><span class="code">${d.code}${jiTxt}</span></div>`;
+  else cell.innerHTML=`<span class="loc">${d.loc}</span>`;
+}
+function drawKcell(cell,s){
+  const simpleMap={hakkai,soshu,gego};
+  const obj=simpleMap[cell.dataset.tab];const i=+cell.dataset.i;
+  const d=obj.rows[i].cell;const ans=cell.querySelector('.ans');
+  const jiTxt=d.ji?`<span class="ji">(${d.ji})</span>`:'';
+  cell.dataset.stage=s;
+  if(s===0){ans.innerHTML='？';ans.className='ans';}
+  else if(s===1){ans.innerHTML=`<span class="yomi2">${d.yomi}</span><span class="nm">${d.name}</span><span class="cd">${d.code}${jiTxt}</span>`;ans.className='ans shown';}
+  else{ans.innerHTML=d.loc;ans.className='ans shown loc-mode';}
+}
+function drawHcell(cell,s){
+  const i=+cell.dataset.i;const pr=+cell.dataset.pair;
+  const c=pr===1?hasso.pairs[i].c1:hasso.pairs[i].c2;
+  const ans=cell.querySelector('.ans');
+  const jiTxt=c.ji?`<span class="ji">(${c.ji})</span>`:'';
+  cell.dataset.stage=s;
+  if(s===0){ans.innerHTML='？';ans.className='ans';}
+  else if(s===1){ans.innerHTML=`<span class="yomi2">${c.yomi}</span><span class="nm">${c.name}</span><span class="cd">${c.code}${jiTxt}</span>`;ans.className='ans shown';}
+  else{ans.innerHTML=c.loc;ans.className='ans shown loc-mode';}
+}
+function drawInfoTd(td,show){
+  if(show){td.classList.remove('q');td.classList.add('shown');td.textContent=td.dataset.v;}
+  else{td.classList.remove('shown');td.classList.add('q');td.textContent='？';}
+}
+// 全セルを指定ステージへ一括セット（意味・主治は s>=1 で開示）
+function setYoketuAll(s){
+  const area=document.getElementById('yoketuArea');if(!area)return;
+  area.querySelectorAll('.cell').forEach(c=>drawCell(c,s));
+  area.querySelectorAll('.kcell').forEach(c=>drawKcell(c,s));
+  area.querySelectorAll('.hcell').forEach(c=>drawHcell(c,s));
+  // 意味・主治は場所を持たないため、s=0で？、s=1/2で開示
+  area.querySelectorAll('.info-row td.q, .info-row td.shown').forEach(td=>drawInfoTd(td,s>=1));
+  document.querySelectorAll('.yoketu-allbtn').forEach(b=>b.classList.toggle('on',+b.dataset.stage===s));
+}
 function renderYoketu(){
   const area=document.getElementById('yoketuArea');
   area.innerHTML=buildGoyuTable()+buildGoyoTable()
     +buildSimpleTable(hakkai,'hakkai')+buildSimpleTable(soshu,'soshu')
     +buildHassoTable()+buildSimpleTable(gego,'gego');
   area.querySelectorAll('.cell').forEach(cell=>{
-    cell.onclick=()=>{
-      const t=cell.dataset.t,r=+cell.dataset.r,ci=+cell.dataset.c;
-      let d;
-      if(t==='goyuYin')d=goyu.yin[r].cells[ci];
-      else if(t==='goyuYang')d=goyu.yang[r].cells[ci];
-      else if(t==='goyoYin')d=goyo.yin[r].cells[ci];
-      else if(t==='goyoYang')d=goyo.yang[r].cells[ci];
-      else if(t==='extraRaku')d=goyo.extraRaku[r].cell;
-      else d=goyo.extraGeki[r].cell;
-      let s=(+cell.dataset.stage+1)%3;cell.dataset.stage=s;
-      const jiTxt = d.ji? `<span class="ji">(${d.ji})</span>` : '';
-      if(s===0)cell.innerHTML=`<span class="tap0">？</span>`;
-      else if(s===1)cell.innerHTML=`<div><span class="yomi">${d.yomi}</span><span class="name">${d.name}</span><span class="code">${d.code}${jiTxt}</span></div>`;
-      else cell.innerHTML=`<span class="loc">${d.loc}</span>`;
-    };
+    cell.onclick=()=>drawCell(cell,(+cell.dataset.stage+1)%3);
   });
   // 八会穴・四総穴・下合穴：経穴セルをタップで ？→経穴名→場所 を循環
-  const simpleMap={hakkai,soshu,gego};
   area.querySelectorAll('.kcell').forEach(cell=>{
-    cell.onclick=()=>{
-      const obj=simpleMap[cell.dataset.tab];const i=+cell.dataset.i;
-      const d=obj.rows[i].cell;const ans=cell.querySelector('.ans');
-      const jiTxt = d.ji? `<span class="ji">(${d.ji})</span>` : '';
-      let s=(+cell.dataset.stage+1)%3;cell.dataset.stage=s;
-      if(s===0){ans.innerHTML='？';ans.className='ans';}
-      else if(s===1){ans.innerHTML=`<span class="yomi2">${d.yomi}</span><span class="nm">${d.name}</span><span class="cd">${d.code}${jiTxt}</span>`;ans.className='ans shown';}
-      else{ans.innerHTML=d.loc;ans.className='ans shown loc-mode';}
-    };
+    cell.onclick=()=>drawKcell(cell,(+cell.dataset.stage+1)%3);
   });
   // 八総穴：交会穴セルをタップで ？→経穴名→場所 を循環
   area.querySelectorAll('.hcell').forEach(cell=>{
-    cell.onclick=()=>{
-      const i=+cell.dataset.i;const pr=+cell.dataset.pair;
-      const c = pr===1? hasso.pairs[i].c1 : hasso.pairs[i].c2;
-      const ans=cell.querySelector('.ans');
-      const jiTxt = c.ji? `<span class="ji">(${c.ji})</span>` : '';
-      let s=(+cell.dataset.stage+1)%3;cell.dataset.stage=s;
-      if(s===0){ans.innerHTML='？';ans.className='ans';}
-      else if(s===1){ans.innerHTML=`<span class="yomi2">${c.yomi}</span><span class="nm">${c.name}</span><span class="cd">${c.code}${jiTxt}</span>`;ans.className='ans shown';}
-      else{ans.innerHTML=c.loc;ans.className='ans shown loc-mode';}
-    };
+    cell.onclick=()=>drawHcell(cell,(+cell.dataset.stage+1)%3);
   });
   // 五兪穴 意味・主治：セルをタップで開示
   area.querySelectorAll('.info-row td.q').forEach(td=>{
-    td.onclick=()=>{
-      if(td.classList.contains('shown')){td.classList.remove('shown');td.classList.add('q');td.textContent='？';}
-      else{td.classList.remove('q');td.classList.add('shown');td.textContent=td.dataset.v;}
-    };
+    td.onclick=()=>drawInfoTd(td,!td.classList.contains('shown'));
   });
+  // 一括表示ボタン（？／経穴名／部位）
+  document.querySelectorAll('.yoketu-allbtn').forEach(btn=>{
+    btn.onclick=()=>setYoketuAll(+btn.dataset.stage);
+  });
+}
+// 筋肉の1行を開く/閉じる（個別クリックと一括ボタンで共用）
+function setMuscleRow(row,open){
+  const ci=+row.dataset.c,mi=+row.dataset.m,val=row.querySelector('.mval');
+  const m=muscleCats[ci].muscles[mi];
+  if(!open){row.dataset.open='0';row.classList.remove('revealed');val.classList.add('empty');val.textContent='？';
+    if(row.dataset.r==='kei')row.closest('.muscle-card').querySelector('.keiketu').style.display='none';return;}
+  row.dataset.open='1';row.classList.add('revealed');val.classList.remove('empty');
+  if(row.dataset.r==='kei'){val.textContent=m.keiketu;row.closest('.muscle-card').querySelector('.keiketu').style.display='inline-block';}
+  else val.textContent=m.rows[+row.dataset.r][1];
 }
 function renderMuscles(){
   const area=document.getElementById('muscleArea');
@@ -2903,15 +2945,21 @@ function renderMuscles(){
   area.querySelectorAll('.mrow').forEach(row=>{
     row.onclick=(e)=>{
       e.stopPropagation();
-      const ci=+row.dataset.c,mi=+row.dataset.m,val=row.querySelector('.mval');
-      const open=row.dataset.open==='1';const m=muscleCats[ci].muscles[mi];
-      if(open){row.dataset.open='0';row.classList.remove('revealed');val.classList.add('empty');val.textContent='？';
-        if(row.dataset.r==='kei')row.closest('.muscle-card').querySelector('.keiketu').style.display='none';return;}
-      row.dataset.open='1';row.classList.add('revealed');val.classList.remove('empty');
-      if(row.dataset.r==='kei'){val.textContent=m.keiketu;row.closest('.muscle-card').querySelector('.keiketu').style.display='inline-block';}
-      else val.textContent=m.rows[+row.dataset.r][1];
+      setMuscleRow(row,row.dataset.open!=='1');
     };
   });
+  // 一括開閉ボタン
+  const allBtn=document.getElementById('muscleAll');
+  if(allBtn){
+    allBtn.classList.remove('on');allBtn.textContent='すべて開く';
+    allBtn.onclick=()=>{
+      const turnOn=!allBtn.classList.contains('on');
+      allBtn.classList.toggle('on',turnOn);
+      allBtn.textContent=turnOn?'すべて閉じる':'すべて開く';
+      if(turnOn)area.querySelectorAll('.mcat').forEach(c=>c.classList.add('open'));
+      area.querySelectorAll('.mrow').forEach(row=>setMuscleRow(row,turnOn));
+    };
+  }
 }
 
 /* ===================== 動脈・静脈・神経（経穴の解剖データ由来）===================== */
