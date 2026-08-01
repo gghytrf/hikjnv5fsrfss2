@@ -847,8 +847,26 @@
     <div class="card">
       <h2>問題データ</h2>
       <div id="setting-q-version" style="font-size:13px;color:#4a5a6a;margin-bottom:10px;">問題データ: —</div>
+      <div style="font-size:12px;color:#7a8a99;margin-bottom:10px;line-height:1.7;">
+        このアプリはオンライン専用ですが、JSONファイルで問題を追加できます。<br>
+        取り込んだファイルは端末に保存されるため、毎回取り込み直す必要はありません。<br>
+        オンラインで配信中の問題とID（id）が重複した場合は、常にオンライン側の内容が優先されます。
+      </div>
+      <input type="file" id="import-questions-file" accept="application/json,.json" style="display:none;" onchange="handleImportQuestionsFile(event)">
       <div class="setting-row">
-
+        <div>
+          <div class="lbl">JSONファイルを取り込む</div>
+          <div class="desc">questions.jsonと同じ形式（{"questions":[...]}）</div>
+        </div>
+        <button class="btn" onclick="triggerImportQuestionsFile()" style="padding: 8px 14px; font-size: 13px;">📥 取り込む</button>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="lbl">端末保存分を削除</div>
+          <div class="desc">取り込んだ問題データ（端末保存分）のみ削除します</div>
+        </div>
+        <button class="btn danger" onclick="clearCustomQuestions()" style="padding: 8px 14px; font-size: 13px;">🗑️ 削除</button>
+      </div>
     </div>
 
     <div class="card">
@@ -949,6 +967,7 @@ function compareVersion(a, b) {
 // 問題データ（外部 data/questions.json から起動時に読み込む）
 // 旧 BUNDLED_QUESTIONS の代わりに loadQuestionData() で取得する
 let BUNDLED_QUESTIONS = [];
+let CUSTOM_QUESTION_COUNT = 0; // 端末に保存済みのJSON取り込み分のうち、実際に採用された件数（オンライン分と重複しなかった件数）
 let QUESTION_DATA_VERSION = null;
 
 // 問題データの正規化（choice1~4形式 と choices配列形式の両方に対応）
@@ -1072,7 +1091,31 @@ async function loadQuestionData() {
         merged.push(q);
       });
     }
+
+    // 端末に保存済みの取り込みデータ（JSONインポート分）をマージ。
+    // オンライン取得分（questions.json / questions-2.json）とIDが被る場合は、
+    // 常にオンライン側を優先する（＝取り込み分はスキップ）。
+    let customCount = 0;
+    try {
+      if (db) {
+        const custom = await dbGetAll('customQuestions');
+        if (custom && custom.length) {
+          const seenAll = new Set(merged.map(q => q && q.id).filter(x => x != null));
+          custom.forEach(q => {
+            if (!q || q.id == null) return;
+            if (seenAll.has(q.id)) return; // オンライン側優先。重複はスキップ
+            seenAll.add(q.id);
+            merged.push(q);
+            customCount++;
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('customQuestions の読み込みをスキップしました:', e.message);
+    }
+
     BUNDLED_QUESTIONS = merged.map(normalizeQuestion);
+    CUSTOM_QUESTION_COUNT = customCount;
     // バージョンは両方を連結（version.json 比較・表示用）
     QUESTION_DATA_VERSION = [primary.version, extra && extra.version].filter(Boolean).join('+') || null;
     return true;
@@ -1086,7 +1129,7 @@ async function loadQuestionData() {
 
 //=========================================================
 const DB_NAME = 'StudyAppDB';
-const DB_VERSION = 6; // questionData ストア廃止（毎回fetchのためIndexedDB不使用）
+const DB_VERSION = 7; // customQuestions ストア追加（JSON取り込み分を端末に保存し、次回以降も再利用）
 let db = null;
 
 function openDB() {
@@ -1136,6 +1179,10 @@ function openDB() {
       }
       if (!d.objectStoreNames.contains('mutedQuestions')) {
         d.createObjectStore('mutedQuestions', { keyPath: 'questionId' });
+      }
+      // JSONファイルから取り込んだ問題データ（端末に保存し、次回起動時も再取り込み不要）
+      if (!d.objectStoreNames.contains('customQuestions')) {
+        d.createObjectStore('customQuestions', { keyPath: 'id' });
       }
     };
   });
@@ -1522,7 +1569,12 @@ async function afterDataReady() {
   if (se) se.value = state.settings.examType;
 
   const dvl = document.getElementById('data-version-label');
-  if (dvl) dvl.textContent = '問題データ: ver.' + (QUESTION_DATA_VERSION || '—') + '（' + state.questions.length + '問）';
+  if (dvl) {
+    let dvlText = '問題データ: ver.' + (QUESTION_DATA_VERSION || '—') + '（' + state.questions.length + '問）';
+    if (CUSTOM_QUESTION_COUNT > 0) dvlText += '　うち端末取り込み分 ' + CUSTOM_QUESTION_COUNT + '問';
+    dvl.textContent = dvlText;
+  }
+  renderSettingsQVersion();
 
   updateHomeStats();
   renderSettingsYearList();
@@ -3236,15 +3288,8 @@ function goSettings() {
   if (appEl) {
     appEl.textContent = 'アプリ: ver.' + APP_VERSION;
   }
-  // 問題データバージョンを表示（fetch済みデータ基準）
-  const el = document.getElementById('setting-q-version');
-  if (el) {
-    if (BUNDLED_QUESTIONS && BUNDLED_QUESTIONS.length > 0) {
-      el.textContent = '問題データ: ver.' + (QUESTION_DATA_VERSION || '—') + '（' + BUNDLED_QUESTIONS.length + '問）';
-    } else {
-      el.textContent = '問題データ: 読み込み中…';
-    }
-  }
+  // 問題データバージョンを表示（fetch済みデータ＋端末取り込み分）
+  renderSettingsQVersion();
   showScreen('settings', '設定', '');
 }
 
@@ -3252,6 +3297,86 @@ function goSettings() {
 // 問題データの再取り込み（設定画面などから呼ぶ）
 //=========================================================
 // reimportQuestionData / performUpdateCheck / manualUpdateCheck は廃止
+
+//=========================================================
+// JSONファイルからの問題取り込み（オフライン端末保存・オンライン優先マージ）
+//=========================================================
+// 取り込んだJSONファイルはIndexedDB（customQuestionsストア）に保存されるため、
+// 一度取り込めば次回以降アプリを開いたときも再取り込み不要でそのまま使える。
+// オンラインのquestions.json/questions-2.jsonとIDが被る場合は、常にオンライン側を優先する。
+
+function triggerImportQuestionsFile() {
+  const input = document.getElementById('import-questions-file');
+  if (input) { input.value = ''; input.click(); }
+}
+
+async function handleImportQuestionsFile(event) {
+  const file = event && event.target && event.target.files && event.target.files[0];
+  if (!file) return;
+  await importCustomQuestionsFromFile(file);
+}
+
+async function importCustomQuestionsFromFile(file) {
+  let json;
+  try {
+    const text = await file.text();
+    json = JSON.parse(text);
+  } catch (e) {
+    showToast('⚠️ JSONファイルの読み込みに失敗しました: ' + e.message, 4000);
+    return;
+  }
+  const arr = json && Array.isArray(json.questions) ? json.questions
+            : (Array.isArray(json) ? json : null);
+  if (!arr || arr.length === 0) {
+    showToast('⚠️ questions配列が見つかりませんでした', 4000);
+    return;
+  }
+
+  let added = 0, updatedCnt = 0, skipped = 0;
+  for (const q of arr) {
+    if (!q || q.id == null) { skipped++; continue; }
+    try {
+      const existing = await dbGet('customQuestions', q.id);
+      await dbPut('customQuestions', q);
+      if (existing) updatedCnt++; else added++;
+    } catch (e) {
+      skipped++;
+    }
+  }
+
+  // 再読み込みして画面に反映（IDが被るオンライン分は自動的に除外される）
+  await loadQuestionData();
+  await afterDataReady();
+  renderSettingsQVersion();
+
+  let msg = `✅ 取り込み完了（新規${added}件・更新${updatedCnt}件）`;
+  if (skipped) msg += `／不正データ${skipped}件をスキップ`;
+  showToast(msg, 4500);
+}
+
+async function clearCustomQuestions() {
+  if (!confirm('端末に保存した取り込み問題データをすべて削除します。よろしいですか？')) return;
+  await dbClear('customQuestions');
+  await loadQuestionData();
+  await afterDataReady();
+  renderSettingsQVersion();
+  showToast('🗑️ 取り込み問題データを削除しました', 3000);
+}
+
+// 設定画面の「問題データ」表示を更新（オンライン件数＋端末保存の取り込み件数）
+function renderSettingsQVersion() {
+  const el = document.getElementById('setting-q-version');
+  if (!el) return;
+  if (BUNDLED_QUESTIONS && BUNDLED_QUESTIONS.length > 0) {
+    let text = '問題データ: ver.' + (QUESTION_DATA_VERSION || '—') + '（' + BUNDLED_QUESTIONS.length + '問）';
+    if (CUSTOM_QUESTION_COUNT > 0) {
+      text += '　うち端末取り込み分 ' + CUSTOM_QUESTION_COUNT + '問';
+    }
+    el.textContent = text;
+  } else {
+    el.textContent = '問題データ: 読み込み中…';
+  }
+}
 
 function openManual() {
   const modal = document.getElementById('manual-modal');
