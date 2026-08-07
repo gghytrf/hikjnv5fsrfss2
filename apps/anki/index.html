@@ -312,18 +312,22 @@
   .card .tap0{color:var(--indigo);opacity:.4;font-size:calc(16px*var(--fs));text-align:center;padding:30px 0;font-family:'Zen Kaku Gothic New'}
   /* クイズ（連続5穴・手書き解答） */
   .quiz-toolbar{display:flex;justify-content:flex-end;margin-bottom:12px}
-  .quiz-mer{background:var(--indigo);color:var(--paper);border-radius:12px;padding:12px 14px;margin-bottom:14px;
+  .quiz-write-panel{background:var(--indigo);border-radius:12px;padding:12px 14px;margin-bottom:12px;
     box-shadow:2px 3px 0 var(--shadow)}
-  .quiz-mer-label{font-size:calc(10px*var(--fs));opacity:.75;letter-spacing:.08em;margin-bottom:8px}
-  .quiz-mer canvas{display:block;width:100%;height:calc(100px*var(--fs));background:var(--paper);border-radius:8px;
-    touch-action:none;box-sizing:border-box;margin-bottom:8px}
-  .quiz-mer-actions{display:flex;gap:10px;align-items:stretch}
-  .quiz-mer-actions .qclear-mer{flex:0 0 auto;border:1px solid rgba(244,239,228,.5);background:transparent;color:var(--paper);
-    border-radius:7px;font-size:calc(11px*var(--fs));font-weight:700;padding:0 16px;cursor:pointer;font-family:'Zen Kaku Gothic New'}
-  .quiz-mer .qanswer{font-family:'Shippori Mincho',serif;font-weight:800;font-size:calc(18px*var(--fs));flex:1;
-    text-align:center;opacity:.5;min-height:calc(38px*var(--fs));box-sizing:border-box;display:flex;flex-direction:column;
-    align-items:center;justify-content:center;background:rgba(244,239,228,.08);border-radius:8px;padding:4px 8px;cursor:pointer}
-  .quiz-mer .qanswer.shown{opacity:1;background:rgba(244,239,228,.18)}
+  .quiz-write-label{font-size:calc(10px*var(--fs));opacity:.75;letter-spacing:.08em;margin-bottom:8px;color:var(--paper)}
+  .quiz-write-row{display:flex;gap:10px;align-items:stretch}
+  .quiz-write-canvas{flex:1;min-width:0;display:block;width:100%;height:calc(220px*var(--fs));background:var(--paper);
+    border-radius:10px;touch-action:none;box-sizing:border-box}
+  .quiz-write-clear{flex:0 0 auto;width:calc(60px*var(--fs));border:1px solid rgba(244,239,228,.5);background:transparent;
+    color:var(--paper);border-radius:8px;font-size:calc(12px*var(--fs));font-weight:700;cursor:pointer;
+    font-family:'Zen Kaku Gothic New';writing-mode:horizontal-tb}
+  .quiz-mer-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .quiz-row-label{font-size:calc(11px*var(--fs));font-weight:700;color:#6b5d4f;white-space:nowrap;flex:0 0 auto}
+  .quiz-mer-row .qanswer{font-family:'Shippori Mincho',serif;font-weight:800;font-size:calc(18px*var(--fs));flex:1;
+    text-align:center;opacity:.4;min-height:calc(38px*var(--fs));box-sizing:border-box;display:flex;
+    align-items:center;justify-content:center;background:var(--paper2);border:1px dashed var(--line);
+    border-radius:8px;padding:4px 8px;cursor:pointer;color:var(--indigo)}
+  .quiz-mer-row .qanswer.shown{opacity:1;background:var(--indigo);color:var(--paper);border-style:solid;border-color:var(--indigo)}
   .quiz-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
   .quiz-card{position:relative;background:var(--paper2);border:1px solid var(--line);border-radius:12px;
     padding:9px 6px;box-shadow:2px 3px 0 var(--shadow);box-sizing:border-box}
@@ -335,15 +339,9 @@
     padding:8px 0;color:var(--paper);word-break:keep-all;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .quiz-card .qname .qyomi{display:block;font-size:calc(9px*var(--fs));font-weight:500;opacity:.85;margin-top:3px;
     font-family:'Zen Kaku Gothic New'}
-  .quiz-card canvas{display:block;width:100%;height:calc(72px*var(--fs));background:var(--paper);border-radius:8px;
-    touch-action:none;box-sizing:border-box;margin-bottom:5px}
-  .quiz-card .qclear{width:100%;border:1px solid var(--line);background:var(--paper);color:var(--indigo);
-    border-radius:7px;font-size:calc(10px*var(--fs));font-weight:700;padding:4px 0;cursor:pointer;margin-bottom:5px;
-    font-family:'Zen Kaku Gothic New'}
-  /* 答え合わせで枠の高さが変わらないよう、閉/開とも同じmin-heightで中身を中央寄せ */
   .quiz-card .qanswer{font-family:'Shippori Mincho',serif;font-size:calc(13px*var(--fs));font-weight:800;text-align:center;
     color:var(--indigo);opacity:.4;cursor:pointer;padding:5px 3px;border-radius:7px;border:1px dashed var(--line);
-    min-height:calc(46px*var(--fs));box-sizing:border-box;display:flex;flex-direction:column;align-items:center;
+    min-height:calc(50px*var(--fs));box-sizing:border-box;display:flex;flex-direction:column;align-items:center;
     justify-content:center;line-height:1.3;word-break:keep-all;white-space:nowrap;overflow:hidden}
   .quiz-card .qanswer.shown{opacity:1;background:var(--indigo);color:var(--paper);border-style:solid;border-color:var(--indigo)}
   .quiz-card .qanswer .qyomi{display:block;font-size:calc(8.5px*var(--fs));font-weight:500;margin-top:2px;font-family:'Zen Kaku Gothic New'}
@@ -624,7 +622,7 @@
       <div class="meridian-pick" id="meridianPick"></div>
       <p class="hint" id="hintCard">カードを<b>タップ</b>→経穴名　もう一度<b>タップ</b>→部位・取り方・解剖　再タップで戻る</p>
       <p class="hint" id="hintNames" style="display:none">経絡名の右の<b>？</b>を<b>タップ</b>で経穴名を一斉表示／各経穴名を<b>タップ</b>で個別に開閉</p>
-      <p class="hint" id="hintQuiz" style="display:none">連続する5穴のうち1穴だけヒントを表示。空欄に<b>手書き</b>で経絡名・経穴名を書いてから、答え欄を<b>タップ</b>して答え合わせ（自己採点）</p>
+      <p class="hint" id="hintQuiz" style="display:none">連続する5穴のうち1穴だけヒントを表示。上の書くスペースに<b>手書き</b>で経絡名・経穴名を書いてから、各答え欄を<b>タップ</b>して答え合わせ（自己採点）</p>
       <p class="hint" id="hintSearch" style="display:none"></p>
       <div class="list" id="cardList"></div>
       <div id="nameList" style="display:none"></div>
@@ -2873,33 +2871,32 @@ function renderQuiz(){
     }
     return `<div class="quiz-card" data-i="${i}">
       <span class="num" data-numi="${i}"></span>
-      <canvas class="quiz-canvas" data-i="${i}" width="260" height="170"></canvas>
-      <button class="qclear" type="button" data-i="${i}">消去</button>
       <div class="qanswer" data-i="${i}">タップ</div>
     </div>`;
   }).join('');
   area.innerHTML=`
     <div class="quiz-toolbar"><button class="ryaku-allbtn" id="quizNext">🔀 次の問題</button></div>
-    <div class="quiz-mer">
-      <div class="quiz-mer-label">経絡名（手書きしてから答え合わせ）</div>
-      <canvas class="quiz-mer-canvas" width="440" height="150"></canvas>
-      <div class="quiz-mer-actions">
-        <button class="qclear-mer" type="button">消去</button>
-        <div class="qanswer" id="quizMerAnswer">？</div>
+    <div class="quiz-write-panel">
+      <div class="quiz-write-label">書くスペース（経絡名・経穴名を手書き）</div>
+      <div class="quiz-write-row">
+        <canvas class="quiz-write-canvas" width="900" height="300"></canvas>
+        <button class="quiz-write-clear" type="button">消去</button>
       </div>
     </div>
+    <div class="quiz-mer-row">
+      <span class="quiz-row-label">経絡名</span>
+      <div class="qanswer" id="quizMerAnswer">？</div>
+    </div>
     <div class="quiz-cards">${cardsHtml}</div>`;
-  area.querySelectorAll('canvas').forEach(cv=>{cv.style.touchAction='none';setupCanvas(cv);});
+  const writeCanvas=area.querySelector('.quiz-write-canvas');
+  if(writeCanvas){writeCanvas.style.touchAction='none';setupCanvas(writeCanvas);}
+  const writeClearBtn=area.querySelector('.quiz-write-clear');
+  if(writeClearBtn)writeClearBtn.onclick=()=>{ if(writeCanvas)clearCanvasEl(writeCanvas); };
   const merAns=document.getElementById('quizMerAnswer');
   merAns.onclick=()=>{
     curQuiz.merShown=!curQuiz.merShown;
     merAns.textContent=curQuiz.merShown?meridian.name:'？';
     merAns.classList.toggle('shown',curQuiz.merShown);
-  };
-  const merClearBtn=area.querySelector('.qclear-mer');
-  if(merClearBtn)merClearBtn.onclick=()=>{
-    const cv=area.querySelector('.quiz-mer-canvas');
-    if(cv)clearCanvasEl(cv);
   };
   area.querySelectorAll('.quiz-card:not(.base)').forEach(card=>{
     const i=+card.dataset.i;const p=five[i];
@@ -2916,12 +2913,6 @@ function renderQuiz(){
         ansEl.classList.remove('shown');
         numEl.textContent='';
       }
-    };
-  });
-  area.querySelectorAll('.qclear').forEach(btn=>{
-    btn.onclick=()=>{
-      const cv=area.querySelector(`.quiz-canvas[data-i="${btn.dataset.i}"]`);
-      if(cv)clearCanvasEl(cv);
     };
   });
   const nextBtn=document.getElementById('quizNext');
