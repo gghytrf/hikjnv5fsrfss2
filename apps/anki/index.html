@@ -310,6 +310,43 @@
   .card .loc{font-size:calc(13px*var(--fs));line-height:1.6;color:var(--ink)}
   .card .tori{font-size:calc(11.5px*var(--fs));line-height:1.55;color:#5a4a35}
   .card .tap0{color:var(--indigo);opacity:.4;font-size:calc(16px*var(--fs));text-align:center;padding:30px 0;font-family:'Zen Kaku Gothic New'}
+  /* クイズ（連続5穴・手書き解答） */
+  .quiz-toolbar{display:flex;justify-content:flex-end;margin-bottom:12px}
+  .quiz-mer{background:var(--indigo);color:var(--paper);border-radius:12px;padding:12px 14px;margin-bottom:14px;
+    box-shadow:2px 3px 0 var(--shadow)}
+  .quiz-mer-label{font-size:calc(10px*var(--fs));opacity:.75;letter-spacing:.08em;margin-bottom:8px}
+  .quiz-mer canvas{display:block;width:100%;height:calc(100px*var(--fs));background:var(--paper);border-radius:8px;
+    touch-action:none;box-sizing:border-box;margin-bottom:8px}
+  .quiz-mer-actions{display:flex;gap:10px;align-items:stretch}
+  .quiz-mer-actions .qclear-mer{flex:0 0 auto;border:1px solid rgba(244,239,228,.5);background:transparent;color:var(--paper);
+    border-radius:7px;font-size:calc(11px*var(--fs));font-weight:700;padding:0 16px;cursor:pointer;font-family:'Zen Kaku Gothic New'}
+  .quiz-mer .qanswer{font-family:'Shippori Mincho',serif;font-weight:800;font-size:calc(18px*var(--fs));flex:1;
+    text-align:center;opacity:.5;min-height:calc(38px*var(--fs));box-sizing:border-box;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;background:rgba(244,239,228,.08);border-radius:8px;padding:4px 8px;cursor:pointer}
+  .quiz-mer .qanswer.shown{opacity:1;background:rgba(244,239,228,.18)}
+  .quiz-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+  .quiz-card{position:relative;background:var(--paper2);border:1px solid var(--line);border-radius:12px;
+    padding:9px 6px;box-shadow:2px 3px 0 var(--shadow);box-sizing:border-box}
+  .quiz-card.base{background:var(--cinnabar);border-color:var(--cinnabar-d)}
+  .quiz-card .num{display:inline-block;font-size:calc(9px*var(--fs));font-weight:700;color:var(--paper);
+    background:var(--gold);padding:2px 6px;border-radius:6px;letter-spacing:.03em;margin-bottom:6px}
+  .quiz-card.base .num{background:rgba(0,0,0,.2)}
+  .quiz-card .qname{font-family:'Shippori Mincho',serif;font-size:calc(17px*var(--fs));font-weight:800;text-align:center;
+    padding:8px 0;color:var(--paper);word-break:keep-all;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .quiz-card .qname .qyomi{display:block;font-size:calc(9px*var(--fs));font-weight:500;opacity:.85;margin-top:3px;
+    font-family:'Zen Kaku Gothic New'}
+  .quiz-card canvas{display:block;width:100%;height:calc(72px*var(--fs));background:var(--paper);border-radius:8px;
+    touch-action:none;box-sizing:border-box;margin-bottom:5px}
+  .quiz-card .qclear{width:100%;border:1px solid var(--line);background:var(--paper);color:var(--indigo);
+    border-radius:7px;font-size:calc(10px*var(--fs));font-weight:700;padding:4px 0;cursor:pointer;margin-bottom:5px;
+    font-family:'Zen Kaku Gothic New'}
+  /* 答え合わせで枠の高さが変わらないよう、閉/開とも同じmin-heightで中身を中央寄せ */
+  .quiz-card .qanswer{font-family:'Shippori Mincho',serif;font-size:calc(13px*var(--fs));font-weight:800;text-align:center;
+    color:var(--indigo);opacity:.4;cursor:pointer;padding:5px 3px;border-radius:7px;border:1px dashed var(--line);
+    min-height:calc(46px*var(--fs));box-sizing:border-box;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;line-height:1.3;word-break:keep-all;white-space:nowrap;overflow:hidden}
+  .quiz-card .qanswer.shown{opacity:1;background:var(--indigo);color:var(--paper);border-style:solid;border-color:var(--indigo)}
+  .quiz-card .qanswer .qyomi{display:block;font-size:calc(8.5px*var(--fs));font-weight:500;margin-top:2px;font-family:'Zen Kaku Gothic New'}
   /* mode2 */
   .yoketu-group{margin-bottom:24px}
   .yoketu-group h3{font-family:'Shippori Mincho',serif;font-size:15px;font-weight:800;color:var(--cinnabar);
@@ -578,6 +615,7 @@
       <div class="view-toggle" id="viewToggle">
         <button class="on" data-view="card">カード（部位・取り方・解剖）</button>
         <button data-view="names">経穴名一覧</button>
+        <button data-view="quiz">クイズ</button>
       </div>
       <div class="keiketsu-search-bar">
         <input type="search" id="keiketsuSearch" class="ryaku-search" placeholder="🔍 全経穴を検索（経穴名・よみ・記号　例: 合谷 / ごうこく / LI4）" autocomplete="off">
@@ -586,9 +624,11 @@
       <div class="meridian-pick" id="meridianPick"></div>
       <p class="hint" id="hintCard">カードを<b>タップ</b>→経穴名　もう一度<b>タップ</b>→部位・取り方・解剖　再タップで戻る</p>
       <p class="hint" id="hintNames" style="display:none">経絡名の右の<b>？</b>を<b>タップ</b>で経穴名を一斉表示／各経穴名を<b>タップ</b>で個別に開閉</p>
+      <p class="hint" id="hintQuiz" style="display:none">連続する5穴のうち1穴だけヒントを表示。空欄に<b>手書き</b>で経絡名・経穴名を書いてから、答え欄を<b>タップ</b>して答え合わせ（自己採点）</p>
       <p class="hint" id="hintSearch" style="display:none"></p>
       <div class="list" id="cardList"></div>
       <div id="nameList" style="display:none"></div>
+      <div id="quizArea" style="display:none"></div>
       <div class="list" id="searchResultList" style="display:none"></div>
     </section>
     <section class="panel" id="t2">
@@ -2772,6 +2812,121 @@ function cycleCard(c,p){
     if(p.req)c.insertAdjacentHTML('beforeend',`<span class="req-badge">${p.req}</span>`);
   }
 }
+/* ===================== クイズ（連続5穴・手書き解答） =====================
+   同一経絡内で連続する5穴をランダムに選出し、うち1穴だけ経穴名を最初から表示（ヒント）。
+   残り4穴と経絡名は空欄。ユーザーはcanvasに手書きしてから答え欄をタップして自己採点する。 */
+let curQuiz=null;
+// 手書きキャンバスにポインタ（マウス/タッチ/ペン）で描画できるようにする
+function setupCanvas(canvas){
+  const ctx=canvas.getContext('2d');
+  if(!ctx)return;
+  ctx.strokeStyle='#1a1814';ctx.lineWidth=4;ctx.lineCap='round';ctx.lineJoin='round';
+  let drawing=false,lastX=0,lastY=0;
+  function pos(e){
+    const rect=canvas.getBoundingClientRect();
+    return {x:(e.clientX-rect.left)*(canvas.width/rect.width), y:(e.clientY-rect.top)*(canvas.height/rect.height)};
+  }
+  function start(e){
+    e.preventDefault();drawing=true;
+    try{canvas.setPointerCapture(e.pointerId);}catch(err){}
+    const p=pos(e);lastX=p.x;lastY=p.y;
+    ctx.beginPath();ctx.arc(p.x,p.y,ctx.lineWidth/2,0,Math.PI*2);ctx.fillStyle=ctx.strokeStyle;ctx.fill();
+  }
+  function move(e){
+    if(!drawing)return;e.preventDefault();
+    const p=pos(e);
+    ctx.beginPath();ctx.moveTo(lastX,lastY);ctx.lineTo(p.x,p.y);ctx.stroke();
+    lastX=p.x;lastY=p.y;
+  }
+  function end(){drawing=false;}
+  canvas.addEventListener('pointerdown',start);
+  canvas.addEventListener('pointermove',move);
+  canvas.addEventListener('pointerup',end);
+  canvas.addEventListener('pointercancel',end);
+}
+function clearCanvasEl(canvas){
+  const ctx=canvas.getContext('2d');
+  if(!ctx)return;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+}
+// 5穴以上ある経絡からランダムに1つ選び、その中で連続する5穴を切り出す
+function newQuizSet(){
+  const candidates=meridians.filter(m=>m.points.length>=5);
+  if(candidates.length===0)return;
+  const m=candidates[Math.floor(Math.random()*candidates.length)];
+  const n=m.points.length;
+  const start=Math.floor(Math.random()*(n-4));
+  const five=m.points.slice(start,start+5);
+  const revealIdx=Math.floor(Math.random()*5);
+  curQuiz={meridian:m,five,revealIdx,merShown:false,answered:[false,false,false,false,false]};
+  renderQuiz();
+}
+function renderQuiz(){
+  const area=document.getElementById('quizArea');
+  if(!area)return;
+  if(!curQuiz){area.innerHTML='';return;}
+  const {meridian,five,revealIdx}=curQuiz;
+  const cardsHtml=five.map((p,i)=>{
+    if(i===revealIdx){
+      return `<div class="quiz-card base"><span class="num">${p.no}</span>
+        <div class="qname">${p.name}<span class="qyomi">${p.yomi}</span></div></div>`;
+    }
+    return `<div class="quiz-card" data-i="${i}">
+      <span class="num" data-numi="${i}"></span>
+      <canvas class="quiz-canvas" data-i="${i}" width="260" height="170"></canvas>
+      <button class="qclear" type="button" data-i="${i}">消去</button>
+      <div class="qanswer" data-i="${i}">タップ</div>
+    </div>`;
+  }).join('');
+  area.innerHTML=`
+    <div class="quiz-toolbar"><button class="ryaku-allbtn" id="quizNext">🔀 次の問題</button></div>
+    <div class="quiz-mer">
+      <div class="quiz-mer-label">経絡名（手書きしてから答え合わせ）</div>
+      <canvas class="quiz-mer-canvas" width="440" height="150"></canvas>
+      <div class="quiz-mer-actions">
+        <button class="qclear-mer" type="button">消去</button>
+        <div class="qanswer" id="quizMerAnswer">？</div>
+      </div>
+    </div>
+    <div class="quiz-cards">${cardsHtml}</div>`;
+  area.querySelectorAll('canvas').forEach(cv=>{cv.style.touchAction='none';setupCanvas(cv);});
+  const merAns=document.getElementById('quizMerAnswer');
+  merAns.onclick=()=>{
+    curQuiz.merShown=!curQuiz.merShown;
+    merAns.textContent=curQuiz.merShown?meridian.name:'？';
+    merAns.classList.toggle('shown',curQuiz.merShown);
+  };
+  const merClearBtn=area.querySelector('.qclear-mer');
+  if(merClearBtn)merClearBtn.onclick=()=>{
+    const cv=area.querySelector('.quiz-mer-canvas');
+    if(cv)clearCanvasEl(cv);
+  };
+  area.querySelectorAll('.quiz-card:not(.base)').forEach(card=>{
+    const i=+card.dataset.i;const p=five[i];
+    const ansEl=card.querySelector('.qanswer');
+    const numEl=card.querySelector('.num');
+    ansEl.onclick=()=>{
+      curQuiz.answered[i]=!curQuiz.answered[i];
+      if(curQuiz.answered[i]){
+        ansEl.innerHTML=`${p.name}<span class="qyomi">${p.yomi}</span>`;
+        ansEl.classList.add('shown');
+        numEl.textContent=p.no;
+      }else{
+        ansEl.innerHTML='タップ';
+        ansEl.classList.remove('shown');
+        numEl.textContent='';
+      }
+    };
+  });
+  area.querySelectorAll('.qclear').forEach(btn=>{
+    btn.onclick=()=>{
+      const cv=area.querySelector(`.quiz-canvas[data-i="${btn.dataset.i}"]`);
+      if(cv)clearCanvasEl(cv);
+    };
+  });
+  const nextBtn=document.getElementById('quizNext');
+  if(nextBtn)nextBtn.onclick=newQuizSet;
+}
 function buildGoyuTable(){
   const g=goyu;
   let head='<tr><th></th>'+g.cols.map(c=>`<th>${c}</th>`).join('')+'</tr>';
@@ -3277,19 +3432,33 @@ document.querySelectorAll('nav.tabs button').forEach(b=>{
     if(t==='t8'&&!document.getElementById('levelArea').dataset.done){ renderLevel(); document.getElementById('levelArea').dataset.done='1'; }
   };
 });
-/* 経穴一覧の表示切替（カード ⇄ 経穴名一覧） */
+/* 経穴一覧の表示切替（カード ⇄ 経穴名一覧 ⇄ クイズ） */
 document.querySelectorAll('#viewToggle button').forEach(b=>{
   b.onclick=()=>{
     document.querySelectorAll('#viewToggle button').forEach(x=>x.classList.remove('on'));
     b.classList.add('on');
-    const isCard=b.dataset.view==='card';
-    // 検索中はトグルを切り替えても検索結果を維持する
+    const view=b.dataset.view;
+    // 検索中はトグルを切り替えても検索結果を維持する（クイズは検索と独立して表示）
     const searching=(document.getElementById('keiketsuSearch')?.value||'').trim()!=='';
-    if(searching){ runKeiketsuSearch(); return; }
-    document.getElementById('cardList').style.display=isCard?'flex':'none';
-    document.getElementById('nameList').style.display=isCard?'none':'block';
-    document.getElementById('hintCard').style.display=isCard?'block':'none';
-    document.getElementById('hintNames').style.display=isCard?'none':'block';
+    if(searching && view!=='quiz'){ runKeiketsuSearch(); return; }
+    document.getElementById('cardList').style.display=view==='card'?'flex':'none';
+    document.getElementById('nameList').style.display=view==='names'?'block':'none';
+    document.getElementById('quizArea').style.display=view==='quiz'?'block':'none';
+    document.getElementById('hintCard').style.display=view==='card'?'block':'none';
+    document.getElementById('hintNames').style.display=view==='names'?'block':'none';
+    document.getElementById('hintQuiz').style.display=view==='quiz'?'block':'none';
+    const pick=document.getElementById('meridianPick');
+    const searchBar=document.querySelector('.keiketsu-search-bar');
+    if(view==='quiz'){
+      if(pick)pick.style.display='none';
+      if(searchBar)searchBar.style.display='none';
+      document.getElementById('searchResultList').style.display='none';
+      const hintSearch=document.getElementById('hintSearch');if(hintSearch)hintSearch.style.display='none';
+      if(!curQuiz)newQuizSet();
+    }else{
+      if(pick)pick.style.display='flex';
+      if(searchBar)searchBar.style.display='flex';
+    }
   };
 });
 renderMeridianPick();renderCards();renderNameList();renderYoketu();renderMuscles();
