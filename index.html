@@ -317,7 +317,9 @@
     一度保存すると変更できません（下部の「学習データをリセット」で再設定できます）。ただし<b>あとから学生番号に変更しても、それ以前の日ごとの記録・時期の比較は成績表に反映されません</b>（変更後に送られるのは各問題の最終的な結果のみのため）。累計の正答率・科目別の成績は引き継げます。<br>
     学生番号が全角で入力された場合は半角へ自動変換されます。</div>
     <div class="backup-btns" style="flex-wrap:wrap">
-      <select id="schoolSelect" style="flex:1;min-width:180px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;font-size:calc(13px*var(--fs));background:#fff"></select>
+      <select id="schoolSelect" style="flex:1;min-width:200px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;font-size:calc(13px*var(--fs));background:#fff"></select>
+    </div>
+    <div class="backup-btns" style="flex-wrap:wrap;margin-top:8px">
       <input type="text" id="studentNo" placeholder="学生番号" inputmode="numeric" style="flex:1;min-width:120px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;font-size:calc(13px*var(--fs));background:#fff">
     </div>
     <div class="backup-note" id="studentNoLockNote" style="display:none;margin-top:6px;color:var(--cinnabar,#b4442e)">🔒 学校・学生番号は設定済みのため変更できません。</div>
@@ -437,8 +439,202 @@ function getOrCreateDeviceId(){
    GASへの学習データ送信時に個人IDとして利用する（端末IDと組み合わせて識別）。 */
 const STUDENT_INFO_KEY = 'suite_student_info';
 
-// 学校の選択肢。増やす場合はここに追記する（空欄は設けない）。
-const SCHOOLS = ['大阪行岡医療専門学校長柄校'];
+// 学校の選択肢（大項目→中項目）。国家試験の学校コード表（a.json）から抽出。
+// 増やす／更新する場合はここを編集する（各カテゴリ内は空欄を設けない）。
+const CATEGORY_ORDER = ['大学', '特別支援学校', '養成施設'];
+const SCHOOL_CATEGORIES = {
+  '大学': [
+    {code:'101', name:'筑波技術大学'},
+    {code:'102', name:'明治国際医療大学'},
+    {code:'104', name:'関西医療大学'},
+    {code:'105', name:'帝京平成大学'},
+    {code:'106', name:'鈴鹿医療科学大学'},
+    {code:'107', name:'森ノ宮医療大学'},
+    {code:'108', name:'東京有明医療大学'},
+    {code:'109', name:'常葉大学'},
+    {code:'110', name:'九州看護福祉大学'},
+    {code:'111', name:'宝塚医療大学'},
+    {code:'112', name:'倉敷芸術科学大学'},
+    {code:'113', name:'九州医療科学大学'},
+  ],
+  '特別支援学校': [
+    {code:'201', name:'筑波大学附属視覚特別支援学校'},
+    {code:'202', name:'北海道札幌視覚支援学校'},
+    {code:'203', name:'青森県立盲学校'},
+    {code:'204', name:'岩手県立盛岡視覚支援学校'},
+    {code:'205', name:'宮城県立視覚支援学校'},
+    {code:'206', name:'秋田県立視覚支援学校'},
+    {code:'207', name:'山形県立山形盲学校'},
+    {code:'208', name:'福島県立視覚支援学校'},
+    {code:'209', name:'茨城県立盲学校'},
+    {code:'210', name:'栃木県立盲学校'},
+    {code:'211', name:'群馬県立盲学校'},
+    {code:'212', name:'埼玉県立特別支援学校塙保己一学園'},
+    {code:'213', name:'熊谷理療技術高等盲学校'},
+    {code:'214', name:'千葉県立千葉盲学校'},
+    {code:'215', name:'東京都立文京盲学校'},
+    {code:'216', name:'東京都立八王子盲学校'},
+    {code:'217', name:'神奈川県立平塚盲学校'},
+    {code:'218', name:'横浜市立盲特別支援学校'},
+    {code:'219', name:'横浜訓盲学院'},
+    {code:'220', name:'新潟県立新潟よつば学園'},
+    {code:'221', name:'新潟県立高田盲学校'},
+    {code:'222', name:'富山県立富山視覚総合支援学校'},
+    {code:'223', name:'石川県立盲学校'},
+    {code:'224', name:'福井県立盲学校'},
+    {code:'225', name:'山梨県立盲学校'},
+    {code:'226', name:'長野県長野盲学校'},
+    {code:'227', name:'長野県松本盲学校'},
+    {code:'228', name:'岐阜県立岐阜盲学校'},
+    {code:'229', name:'静岡県立浜松視覚特別支援学校高等部静岡分室'},
+    {code:'230', name:'静岡県立浜松視覚特別支援学校高等部沼津分室'},
+    {code:'231', name:'静岡県立浜松視覚特別支援学校'},
+    {code:'232', name:'愛知県立名古屋盲学校'},
+    {code:'233', name:'愛知県立岡崎盲学校'},
+    {code:'234', name:'三重県立盲学校'},
+    {code:'235', name:'滋賀県立盲学校'},
+    {code:'236', name:'京都府立盲学校'},
+    {code:'237', name:'大阪府立大阪南視覚支援学校'},
+    {code:'238', name:'大阪府立大阪北視覚支援学校'},
+    {code:'239', name:'兵庫県立視覚特別支援学校'},
+    {code:'240', name:'兵庫県立淡路視覚特別支援学校'},
+    {code:'241', name:'神戸市立盲学校'},
+    {code:'242', name:'奈良県立盲学校'},
+    {code:'243', name:'和歌山県立和歌山盲学校'},
+    {code:'244', name:'鳥取県立鳥取盲学校'},
+    {code:'245', name:'島根県立盲学校'},
+    {code:'246', name:'岡山県立岡山盲学校'},
+    {code:'247', name:'広島県立広島中央特別支援学校'},
+    {code:'248', name:'山口県立下関南総合支援学校'},
+    {code:'249', name:'徳島県立徳島視覚支援学校'},
+    {code:'250', name:'香川県立視覚支援学校'},
+    {code:'251', name:'愛媛県立松山盲学校'},
+    {code:'252', name:'高知県立盲学校'},
+    {code:'253', name:'福岡県立福岡盲学校'},
+    {code:'254', name:'福岡県立柳河盲学校'},
+    {code:'255', name:'福岡県立北九州視覚特別支援学校'},
+    {code:'256', name:'佐賀県立盲学校'},
+    {code:'257', name:'長崎県立盲学校'},
+    {code:'258', name:'熊本県立盲学校'},
+    {code:'259', name:'大分県立盲学校'},
+    {code:'260', name:'宮崎県立明星視覚支援学校'},
+    {code:'261', name:'鹿児島県立鹿児島盲学校'},
+    {code:'262', name:'沖縄県立沖縄盲学校'},
+    {code:'263', name:'福岡県立福岡高等視覚特別支援学校'},
+  ],
+  '養成施設': [
+    {code:'301', name:'国立障害者リハビリテーションセンター自立支援局　函館視力障害センター'},
+    {code:'302', name:'北海道鍼灸専門学校'},
+    {code:'303', name:'仙台赤門医療専門学校'},
+    {code:'304', name:'国立障害者リハビリテーションセンター自立支援局　塩原視力障害センター'},
+    {code:'305', name:'国立障害者リハビリテーションセンター'},
+    {code:'306', name:'江南マッサージ師養成所'},
+    {code:'307', name:'東京呉竹医療専門学校'},
+    {code:'308', name:'東洋鍼灸専門学校'},
+    {code:'309', name:'人間総合科学大学鍼灸医療専門学校'},
+    {code:'310', name:'ヘレン・ケラー学院'},
+    {code:'311', name:'東京医療福祉専門学校'},
+    {code:'312', name:'東京衛生学園専門学校'},
+    {code:'313', name:'日本鍼灸理療専門学校'},
+    {code:'314', name:'長生学園'},
+    {code:'315', name:'日本指圧専門学校'},
+    {code:'316', name:'国際鍼灸専門学校'},
+    {code:'317', name:'関東鍼灸専門学校'},
+    {code:'318', name:'湘南医療福祉専門学校'},
+    {code:'319', name:'神奈川衛生学園専門学校'},
+    {code:'320', name:'東海医療学園専門学校'},
+    {code:'321', name:'横浜呉竹医療専門学校'},
+    {code:'322', name:'専門学校名古屋鍼灸学校'},
+    {code:'323', name:'中和医療専門学校'},
+    {code:'324', name:'京都仏眼鍼灸理療専門学校'},
+    {code:'325', name:'京都府立視力障害者福祉センター'},
+    {code:'326', name:'大阪行岡医療専門学校長柄校'},
+    {code:'327', name:'明治東洋医学院専門学校'},
+    {code:'328', name:'関西医療学園専門学校'},
+    {code:'329', name:'森ノ宮医療学園専門学校'},
+    {code:'330', name:'国立障害者リハビリテーションセンター自立支援局　神戸視力障害センター'},
+    {code:'331', name:'みのり聖光園'},
+    {code:'332', name:'四国医療専門学校'},
+    {code:'333', name:'愛媛県盲人福祉センター'},
+    {code:'334', name:'国立障害者リハビリテーションセンター自立支援局　福岡視力障害センター'},
+    {code:'335', name:'鹿児島鍼灸専門学校'},
+    {code:'336', name:'北東北東洋医療専門学校'},
+    {code:'337', name:'東洋医療福祉専門学校'},
+    {code:'338', name:'スポーツ健康医療専門学校'},
+    {code:'339', name:'新潟看護医療専門学校'},
+    {code:'340', name:'神戸東洋医療学院'},
+    {code:'341', name:'福岡医療専門学校'},
+    {code:'342', name:'札幌青葉鍼灸柔整専門学校'},
+    {code:'343', name:'浦和専門学校'},
+    {code:'344', name:'中央医療学園専門学校'},
+    {code:'345', name:'専門学校浜松医療学院'},
+    {code:'346', name:'兵庫鍼灸専門学校'},
+    {code:'347', name:'IGL医療福祉専門学校'},
+    {code:'348', name:'北海道ハイテクノロジー専門学校'},
+    {code:'349', name:'日本工学院北海道専門学校'},
+    {code:'350', name:'福島医療専門学校'},
+    {code:'351', name:'国際メディカルテクノロジー専門学校'},
+    {code:'352', name:'日本健康医療専門学校'},
+    {code:'353', name:'日本工学院八王子専門学校'},
+    {code:'354', name:'早稲田速記医療福祉専門学校'},
+    {code:'355', name:'日本医専'},
+    {code:'356', name:'東京メディカル・スポーツ専門学校'},
+    {code:'357', name:'国際東洋医療学院'},
+    {code:'358', name:'東洋医療専門学校'},
+    {code:'359', name:'履正社国際医療スポーツ専門学校'},
+    {code:'360', name:'平成医療学園専門学校'},
+    {code:'361', name:'日本統合メディカル専門学校'},
+    {code:'362', name:'朝日医療大学校'},
+    {code:'363', name:'大川学園医療福祉専門学校'},
+    {code:'364', name:'岐阜保健大学医療専門学校'},
+    {code:'365', name:'大阪医療技術学園専門学校'},
+    {code:'366', name:'神戸医療福祉専門学校中央校'},
+    {code:'367', name:'福岡天神医療リハビリ専門学校'},
+    {code:'368', name:'九州医療専門学校'},
+    {code:'369', name:'仙台青葉服飾・医療福祉専門学校'},
+    {code:'370', name:'新宿医療専門学校'},
+    {code:'371', name:'国際メディカル専門学校'},
+    {code:'372', name:'名古屋平成看護医療専門学校'},
+    {code:'373', name:'ユマニテク医療福祉大学校'},
+    {code:'374', name:'京都衛生専門学校'},
+    {code:'375', name:'福岡医健・スポーツ専門学校'},
+    {code:'376', name:'鹿児島第一医療リハビリ専門学校'},
+    {code:'377', name:'東日本医療専門学校'},
+    {code:'378', name:'横浜医療専門学校'},
+    {code:'379', name:'信州スポーツ医療福祉専門学校'},
+    {code:'380', name:'浜松医療福祉専門学校'},
+    {code:'381', name:'静岡東都医療専門学校'},
+    {code:'382', name:'常葉学園医療専門学校'},
+    {code:'383', name:'京都医健専門学校'},
+    {code:'384', name:'九州保健福祉大学総合医療専門学校'},
+    {code:'385', name:'MCL盛岡医療大学校'},
+    {code:'386', name:'育英メディカル専門学校'},
+    {code:'387', name:'大分医学技術専門学校'},
+    {code:'388', name:'神奈川柔整鍼灸専門学校'},
+    {code:'389', name:'専門学校中央医療健康大学校'},
+    {code:'390', name:'大阪ハイテクノロジー専門学校'},
+    {code:'391', name:'お茶の水はりきゅう専門学校'},
+    {code:'392', name:'専門学校名古屋医専'},
+    {code:'393', name:'朝日医療専門学校広島校'},
+    {code:'394', name:'長崎医療こども専門学校'},
+    {code:'395', name:'こころ医療福祉専門学校'},
+    {code:'396', name:'大宮呉竹医療専門学校'},
+    {code:'397', name:'アルファ医療福祉専門学校'},
+    {code:'398', name:'専門学校首都医校'},
+    {code:'399', name:'金沢医療技術専門学校'},
+    {code:'400', name:'静岡医療学園専門学校'},
+    {code:'401', name:'専門学校大阪医専'},
+    {code:'402', name:'河原医療福祉専門学校'},
+    {code:'403', name:'中野健康医療専門学校'},
+    {code:'404', name:'九州医療スポーツ専門学校'},
+    {code:'405', name:'近畿医療専門学校'},
+    {code:'406', name:'専門学校沖縄統合医療学院'},
+    {code:'407', name:'名古屋医健スポーツ専門学校'},
+    {code:'408', name:'こころ医療福祉専門学校佐世保校'},
+    {code:'409', name:'札幌スポーツアンドメディカル専門学校'},
+    {code:'410', name:'日本総合医療専門学校'},
+  ]
+};
 
 // 学生番号は全角で入力されることがあるため半角へ揃える。
 // シート側は「学校名＋学生番号」で個人を判別するので、表記ゆれがあると別人になってしまう。
@@ -457,10 +653,37 @@ function loadStudentInfo(){
   }catch(e){ return {school:'', studentNo:''}; }
 }
 
+// HTML特殊文字のエスケープ（学校名をoption要素に安全に埋め込むため）
+function escHtml(s){
+  return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];
+  });
+}
+
+// 大項目（大学／特別支援学校／養成施設）ごとにoptgroupでまとめた単一セレクトを埋める。
+// 先頭の未選択プレースホルダーと各大項目名（optgroupのlabel）はoption要素ではないため選択不可＝登録不可。
 function fillSchoolSelect(el, selected){
   if(!el) return;
-  el.innerHTML = SCHOOLS.map(n => '<option value="'+n+'">'+n+'</option>').join('');
-  el.value = (selected && SCHOOLS.indexOf(selected) !== -1) ? selected : SCHOOLS[0];
+  const opts = ['<option value="">学校等を選択してください</option>'];
+  CATEGORY_ORDER.forEach(cat => {
+    const list = SCHOOL_CATEGORIES[cat] || [];
+    opts.push('<optgroup label="'+escHtml(cat)+'">');
+    list.forEach(s => { opts.push('<option value="'+escHtml(s.name)+'">'+escHtml(s.name)+'</option>'); });
+    opts.push('</optgroup>');
+  });
+  el.innerHTML = opts.join('');
+  // 該当する学校名が無ければ空欄（未選択）に戻る
+  el.value = selected || '';
+}
+
+// 学校名から大項目を逆引きする（送信された学校名が実在するかの防御チェック用）
+function findSchoolCategory(name){
+  if(!name) return null;
+  for (let i = 0; i < CATEGORY_ORDER.length; i++){
+    const cat = CATEGORY_ORDER[i];
+    if ((SCHOOL_CATEGORIES[cat] || []).some(s => s.name === name)) return cat;
+  }
+  return null;
 }
 
 // 学校・学生番号は一度保存したら変更不可（リセットで解除）
@@ -482,7 +705,10 @@ function saveStudentInfo(){
   const noEl = document.getElementById('studentNo');
   const seEl = document.getElementById('schoolSelect');
   const studentNo = normalizeStudentNo(noEl.value);
-  const school = (seEl && seEl.value) || SCHOOLS[0];
+  const school = (seEl && seEl.value) || '';
+  // プレースホルダーや大項目名（optgroupのlabel）はoption値として存在しないため、
+  // 実在する学校名かどうかを逆引きでチェックする（未選択・不正値なら登録不可）
+  if(!school || !findSchoolCategory(school)){ showToast('学校等を選択してください'); return; }
   if(!studentNo){ showToast('学生番号を入力してください'); return; }
   try{
     localStorage.setItem(STUDENT_INFO_KEY, JSON.stringify({school: school, studentNo: studentNo}));
@@ -785,7 +1011,9 @@ function cancelStudentGate(){
 function confirmStudentGate(){
   const val = normalizeStudentNo(document.getElementById('gateStudentNo').value);
   const seEl = document.getElementById('gateSchool');
-  const school = (seEl && seEl.value) || SCHOOLS[0];
+  const school = (seEl && seEl.value) || '';
+  // プレースホルダーや大項目名は選択不可のため、実在する学校名かどうかを逆引きでチェックする
+  if(!school || !findSchoolCategory(school)){ alert('学校等を選択してください'); return; }
   if(!val){ alert('学生番号を入力してください'); return; }
   try{ localStorage.setItem(STUDENT_INFO_KEY, JSON.stringify({school: school, studentNo: val})); }catch(e){}
   const ne = document.getElementById('studentNo');
