@@ -1,4 +1,4 @@
 {
-  "version": "2026.8.7",
+  "version": "2026.8.7-13fd40d",
   "note": "push 時に GitHub Actions が日付で自動生成"
 }
