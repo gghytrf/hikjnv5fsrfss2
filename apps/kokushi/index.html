@@ -531,7 +531,7 @@
         </label>
         <label class="radio-row">
           <input type="radio" name="exam-source" value="original" onchange="updateExamSourceUI()">
-          <span>本試験専用問題<span style="color:#b06a2e;font-size:12px;font-weight:600;">（画面でのみ実施可能）</span></span>
+          <span>本試験専用問題</span>
         </label>
         <div id="original-select-wrap" style="padding: 8px 0 8px 32px; display: none;">
           <select id="exam-original-select" style="width: 100%;" disabled>
@@ -557,9 +557,6 @@
         </label>
         <div style="padding: 0 0 8px 32px; font-size: 12px; color: #7a8a99;">
           AM・PMそれぞれ2時間10分の制限時間で解きます。
-        </div>
-        <div id="screen-only-note" style="display:none; padding: 4px 12px 8px 32px; font-size: 12px; color: #b06a2e;">
-          ※ 本試験専用問題は、画面での実施のみに対応しています（紙での印刷はできません）。
         </div>
       </div>
     </div>
@@ -1905,30 +1902,12 @@ function updateExamSourceUI() {
   const origSel = document.getElementById('exam-original-select');
   origWrap.style.display = source === 'original' ? 'block' : 'none';
   origSel.disabled = source !== 'original';
-
-  // 本試験専用問題は画面実施のみ（紙＝印刷は不可）。
-  // 紙のラジオを無効化し、選択されていたら画面へ切り替える。
-  const isOriginal = source === 'original';
-  const paperRow  = document.getElementById('method-paper-row');
-  const paperDesc = document.getElementById('method-paper-desc');
-  const paperRadio = document.querySelector('input[name="exam-method"][value="paper"]');
-  const screenRadio = document.querySelector('input[name="exam-method"][value="screen"]');
-  const screenNote = document.getElementById('screen-only-note');
-  if(paperRadio){
-    paperRadio.disabled = isOriginal;
-    if(isOriginal && paperRadio.checked){ screenRadio.checked = true; }
-  }
-  if(paperRow)  paperRow.style.opacity  = isOriginal ? '0.4' : '';
-  if(paperDesc) paperDesc.style.opacity = isOriginal ? '0.4' : '';
-  if(screenNote) screenNote.style.display = isOriginal ? 'block' : 'none';
 }
 
 function startExamMode() {
   const examType = document.querySelector('input[name="exam-type"]:checked').value;
   const source = document.querySelector('input[name="exam-source"]:checked').value;
   let method = document.querySelector('input[name="exam-method"]:checked').value;
-  // 本試験専用問題は画面実施のみ（紙＝印刷は不可）。UIで無効化しているが、念のため強制する。
-  if (source === 'original') method = 'screen';
   // 学習履歴への反映は必ず行う（オプションは廃止。実際に解答した試験のみ記録される）
   const recordHistory = true;
   const shuffleChoices = document.getElementById('exam-shuffle-choices').checked;
