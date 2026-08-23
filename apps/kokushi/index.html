@@ -434,8 +434,7 @@
       <!-- 検索ヒント -->
       <div style="font-size: 12px; color: #7a8a99; background: #f5f7fa; border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; line-height: 1.7;">
         例：<strong style="color: #2c5f7c;">橈骨神経</strong>　または　<strong style="color: #2c5f7c;">橈骨 神経</strong>（スペース区切りでAND検索）<br>
-        全角・半角、大文字・小文字はどちらでもヒットします（<strong>3mmHg</strong> ＝ <strong>３ｍｍＨＧ</strong>）<br>
-        ※ 50件以上ヒットする場合は結果を表示できません。ワードを追加して絞り込んでください。
+        全角・半角、大文字・小文字はどちらでもヒットします（<strong>3mmHg</strong> ＝ <strong>３ｍｍＨＧ</strong>）
       </div>
 
       <!-- 検索ボックス -->
@@ -3027,14 +3026,6 @@ function execSearch() {
       return keywords.every(kw => allChoices.includes(kw));
     }
   });
-
-  // ③ 50件以上チェック
-  if (matched.length >= 50) {
-    statusEl.style.color = '#e09b2d';
-    statusEl.textContent = `⚠️ ${matched.length}件以上ヒットしました。より詳細なワードで検索してください。`;
-    resultsWrap.style.display = 'none';
-    return;
-  }
 
   // ④ 0件
   if (matched.length === 0) {
