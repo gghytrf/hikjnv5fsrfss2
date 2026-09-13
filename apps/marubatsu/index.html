@@ -358,7 +358,26 @@
           <div class="lbl">問題データについて</div>
           <div class="desc">起動時に自動で marubatsu_questions.json を読み込みます（オンライン接続必須）</div>
         </div>
-
+      </div>
+      <div style="font-size:calc(12px*var(--fs));color:var(--sub);margin:10px 0;line-height:1.7;">
+        このアプリはオンライン専用ですが、JSONファイルで問題を追加できます。<br>
+        取り込んだファイルは端末に保存されるため、毎回取り込み直す必要はありません。<br>
+        オンラインで配信中の問題とID（id）が重複した場合は、常にオンライン側の内容が優先されます。
+      </div>
+      <input type="file" id="mb-import-questions-file" accept="application/json,.json" style="display:none;" onchange="mbHandleImportQuestionsFile(event)">
+      <div class="setting-row">
+        <div>
+          <div class="lbl">JSONファイルを取り込む</div>
+          <div class="desc">marubatsu_questions.jsonと同じ形式（{"questions":[...]}）</div>
+        </div>
+        <button class="btn" onclick="mbTriggerImportQuestionsFile()" style="padding:8px 14px;font-size:calc(13px*var(--fs));">📥 取り込む</button>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="lbl">端末保存分を削除</div>
+          <div class="desc">取り込んだ問題データ（端末保存分）のみ削除します</div>
+        </div>
+        <button class="btn danger" onclick="mbClearCustomQuestions()" style="padding:8px 14px;font-size:calc(13px*var(--fs));">🗑️ 削除</button>
       </div>
     </div>
     <div class="card">
@@ -413,6 +432,7 @@
 /* ====== 状態 ====== */
 let ALL = [];               // 全問題
 let MB_DATA_VERSION = null;  // 取り込んだ問題データのバージョン
+let CUSTOM_QUESTION_COUNT = 0; // 端末に保存済みのJSON取り込み分のうち、実際に採用された件数（オンライン分と重複しなかった件数）
 let YEAR_LABELS = {};       // year値 → 表示ラベル
 let PROGRESS = {};          // questionId -> {questionId,correctCount,incorrectCount,intervalLevel,lastResult,lastAnsweredAt,nextReviewAt}
 let MB_EXCLUDE_YEARS = [];  // 除外年度キー配列 (例: ["hari_kyu_30","amashi_30"])
@@ -479,7 +499,7 @@ let _mbdb = null;
 
 function mbOpenDB(){
   return new Promise((resolve, reject)=>{
-    const req = indexedDB.open(MB_DB, 4); // v4: questionData ストア追加（取り込んだ問題を端末保存）
+    const req = indexedDB.open(MB_DB, 5); // v5: customQuestions ストア追加（JSON取り込み分を端末に保存し、次回以降も再利用）
     req.onupgradeneeded = (e)=>{
       const db = e.target.result;
       // 旧バージョンの questions ストアは使わない
@@ -488,6 +508,8 @@ function mbOpenDB(){
       if(!db.objectStoreNames.contains('progress')) db.createObjectStore('progress', { keyPath:'questionId' });
       // questionData は廃止（毎回fetchするためIndexedDB保存不要）
       if(db.objectStoreNames.contains('questionData')) db.deleteObjectStore('questionData');
+      // JSONファイルから取り込んだ問題データ（端末に保存し、次回起動時も再取り込み不要）
+      if(!db.objectStoreNames.contains('customQuestions')) db.createObjectStore('customQuestions', { keyPath:'id' });
     };
     req.onsuccess = ()=>{
       const db = req.result;
@@ -519,6 +541,12 @@ function mbPut(store, value){
     r.onsuccess=()=>resolve(); r.onerror=()=>reject(r.error);
   });
 }
+function mbClear(store){
+  return new Promise((resolve,reject)=>{
+    const tx=_mbdb.transaction(store,'readwrite'); const r=tx.objectStore(store).clear();
+    r.onsuccess=()=>resolve(); r.onerror=()=>reject(r.error);
+  });
+}
 
 // 起動時に同フォルダの marubatsu_questions.json と marubatsu_questions-2.json を読み込む（端末には保存しない）。
 // ・marubatsu_questions.json … 必須。無ければ起動失敗。
@@ -544,21 +572,53 @@ async function mbFetchFile(name, required){
   }
 }
 
+// 正誤判定の文字ゆれ対策：正誤ボタンは「○」(U+25CB)との厳密一致で判定するため、
+// 全角の「〇」(U+3007・漢数字ゼロ)のまま取り込まれると常に不正解判定になってしまう。
+// 取り込み時に一律で正規化しておく（他の項目は変更しない）。
+function mbNormalizeCorrectAnswer(q){
+  if(q && q.correctAnswer === '〇') q.correctAnswer = '○';
+  return q;
+}
+
 async function mbLoadQuestions(){
   try{
     const primary = await mbFetchFile('marubatsu_questions.json', true);
     if(!primary || primary.questions.length === 0) throw new Error('データが空です');
     const extra = await mbFetchFile('marubatsu_questions-2.json', false);
 
-    const merged = primary.questions.slice();
+    const merged = primary.questions.map(mbNormalizeCorrectAnswer);
     if(extra && extra.questions.length){
       const seen = new Set(merged.map(q => q && q.id).filter(x => x != null));
       extra.questions.forEach(q => {
         if(q && q.id != null && seen.has(q.id)) return;
-        merged.push(q);
+        merged.push(mbNormalizeCorrectAnswer(q));
       });
     }
+
+    // 端末に保存済みの取り込みデータ（JSONインポート分）をマージ。
+    // オンライン取得分（marubatsu_questions.json / -2.json）とIDが被る場合は、
+    // 常にオンライン側を優先する（＝取り込み分はスキップ）。
+    let customCount = 0;
+    try{
+      if(_mbdb){
+        const custom = await mbGetAll('customQuestions');
+        if(custom && custom.length){
+          const seenAll = new Set(merged.map(q => q && q.id).filter(x => x != null));
+          custom.forEach(q=>{
+            if(!q || q.id == null) return;
+            if(seenAll.has(q.id)) return; // オンライン側優先。重複はスキップ
+            seenAll.add(q.id);
+            merged.push(mbNormalizeCorrectAnswer(q));
+            customCount++;
+          });
+        }
+      }
+    }catch(e){
+      console.warn('customQuestions の読み込みをスキップしました:', e.message);
+    }
+
     ALL = merged;
+    CUSTOM_QUESTION_COUNT = customCount;
     MB_DATA_VERSION = [primary.version, extra && extra.version].filter(Boolean).join('+') || null;
     return true;
   }catch(e){
@@ -567,7 +627,72 @@ async function mbLoadQuestions(){
   }
 }
 
-// mbShowImportPrompt / mbHideImportPrompt / mbReimport は廃止（fetch方式に移行）
+//=========================================================
+// JSONファイルからの問題取り込み（オフライン端末保存・オンライン優先マージ）
+//=========================================================
+// 取り込んだJSONファイルはIndexedDB（customQuestionsストア）に保存されるため、
+// 一度取り込めば次回以降アプリを開いたときも再取り込み不要でそのまま使える。
+// オンラインのmarubatsu_questions.json/marubatsu_questions-2.jsonとIDが被る場合は、常にオンライン側を優先する。
+
+function mbTriggerImportQuestionsFile(){
+  const input = document.getElementById('mb-import-questions-file');
+  if(input){ input.value=''; input.click(); }
+}
+
+async function mbHandleImportQuestionsFile(event){
+  const file = event && event.target && event.target.files && event.target.files[0];
+  if(!file) return;
+  await mbImportCustomQuestionsFromFile(file);
+}
+
+async function mbImportCustomQuestionsFromFile(file){
+  let json;
+  try{
+    const text = await file.text();
+    json = JSON.parse(text);
+  }catch(e){
+    toast('⚠️ JSONファイルの読み込みに失敗しました', 4000);
+    return;
+  }
+  const arr = json && Array.isArray(json.questions) ? json.questions
+            : (Array.isArray(json) ? json : null);
+  if(!arr || arr.length === 0){
+    toast('⚠️ questions配列が見つかりませんでした', 4000);
+    return;
+  }
+
+  let added = 0, updatedCnt = 0, skipped = 0;
+  for(const q of arr){
+    if(!q || q.id == null){ skipped++; continue; }
+    try{
+      const existing = await mbGet('customQuestions', q.id);
+      await mbPut('customQuestions', q);
+      if(existing) updatedCnt++; else added++;
+    }catch(e){
+      skipped++;
+    }
+  }
+
+  // 再読み込みして画面に反映（IDが被るオンライン分は自動的に除外される）
+  await mbLoadQuestions();
+  buildFilters();
+  refreshHome();
+  mbRenderDataInfo();
+
+  let msg = `✅ 取り込み完了（新規${added}件・更新${updatedCnt}件）`;
+  if(skipped) msg += `／不正データ${skipped}件をスキップ`;
+  toast(msg, 4500);
+}
+
+async function mbClearCustomQuestions(){
+  if(!confirm('端末に保存した取り込み問題データをすべて削除します。よろしいですか？')) return;
+  await mbClear('customQuestions');
+  await mbLoadQuestions();
+  buildFilters();
+  refreshHome();
+  mbRenderDataInfo();
+  toast('🗑️ 取り込み問題データを削除しました', 3000);
+}
 
 //=========================================================
 // 学習データ自動送信（GAS Webアプリへ）
@@ -808,10 +933,21 @@ function showScreen(id){
   window.scrollTo(0,0);
 }
 function openStats(){ refreshStats(); showScreen('stats'); }
+// 設定画面の「問題データ」表示を更新（オンライン件数＋端末保存の取り込み件数）
+function mbRenderDataInfo(){
+  const el = document.getElementById('mb-data-info');
+  if(!el) return;
+  if(ALL && ALL.length){
+    let text = '問題データ: ver.' + (MB_DATA_VERSION || '—') + '（' + ALL.length + '問）';
+    if(CUSTOM_QUESTION_COUNT > 0) text += '　うち端末取り込み分 ' + CUSTOM_QUESTION_COUNT + '問';
+    el.textContent = text;
+  }else{
+    el.textContent = '問題データ: 読み込み中…';
+  }
+}
 function openSettings(){
   showScreen('settings');
-  const el = document.getElementById('mb-data-info');
-  if(el) el.textContent = '問題データ: ' + (ALL && ALL.length ? ('ver.' + (MB_DATA_VERSION || '—') + '（' + ALL.length + '問）') : '読み込み中…');
+  mbRenderDataInfo();
   mbRenderYearList();
 }
 function goSubjectSelect(){ showScreen('subjects'); }
@@ -1120,11 +1256,11 @@ async function resetProgress(){
 
 /* ====== トースト ====== */
 let toastTimer=null;
-function toast(msg){
+function toast(msg, ms){
   const t=document.getElementById('toast');
   t.textContent=msg; t.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer=setTimeout(()=>t.classList.remove('show'),2000);
+  toastTimer=setTimeout(()=>t.classList.remove('show'), ms||2000);
 }
 
 /* ====== 起動 ====== */
