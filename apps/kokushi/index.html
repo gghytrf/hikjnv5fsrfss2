@@ -185,6 +185,7 @@
   .slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.2s; }
   input:checked + .slider { background: #2c5f7c; }
   input:checked + .slider:before { transform: translateX(22px); }
+  input:disabled + .slider { opacity: .45; cursor: not-allowed; }
 
   select { padding: 8px 12px; border: 1.5px solid #d4dde4; border-radius: 8px; font-size: calc(14px * var(--fs)); background: white; }
 
@@ -569,6 +570,16 @@
         </div>
         <label class="switch">
           <input type="checkbox" id="exam-shuffle-choices">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="setting-row" id="exam-shuffle-order-row" style="opacity: .5;">
+        <div>
+          <div class="lbl">出題順をランダム化</div>
+          <div class="desc">「年度を選んで出題」の場合のみ選択可。OFF(既定)は元の問題番号順、ONで科目構成順・科目内ランダム</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="exam-shuffle-order" disabled>
           <span class="slider"></span>
         </label>
       </div>
@@ -1901,6 +1912,12 @@ function updateExamSourceUI() {
   const origSel = document.getElementById('exam-original-select');
   origWrap.style.display = source === 'original' ? 'block' : 'none';
   origSel.disabled = source !== 'original';
+
+  // 「出題順をランダム化」は年度指定時のみ意味を持つ（それ以外は元々問題番号順の概念がない）
+  const orderCb = document.getElementById('exam-shuffle-order');
+  const orderRow = document.getElementById('exam-shuffle-order-row');
+  if (orderCb) orderCb.disabled = source !== 'year';
+  if (orderRow) orderRow.style.opacity = source === 'year' ? '1' : '.5';
 }
 
 function startExamMode() {
@@ -1967,11 +1984,24 @@ function startExamMode() {
 
   let questions = buildResult.questions;
 
-  // 問題のソート(年度指定時は問題番号順、それ以外はAM→PM順)
-  if (source === 'year') {
+  // 問題のソート
+  // ・年度指定時：既定は元の問題番号順。「出題順をランダム化」ONなら科目構成順のまま(科目内は抽出時のランダム順)
+  // ・それ以外(全範囲ランダム・本試験専用問題)：常に科目構成順(AM→PM順)のみ
+  const randomizeOrder = source === 'year' && document.getElementById('exam-shuffle-order').checked;
+  // 問題番号は「15改」のように訂正・改題を示す接尾辞が付く場合があり、単純な引き算(a.questionNo - b.questionNo)では
+  // 数値化できずNaNになって並び順が崩れる。先頭の数字部分だけを取り出して数値比較し、
+  // 数値部分が同じ場合(例:"15"と"15改")は元の表記の文字列比較で安定的に順序付けする。
+  const qNoSortKey = (no) => {
+    const s = String(no == null ? '' : no).trim();
+    const m = s.match(/^(\d+)/);
+    return { num: m ? parseInt(m[1], 10) : Infinity, raw: s };
+  };
+  if (source === 'year' && !randomizeOrder) {
     questions.sort((a, b) => {
       if (a.section !== b.section) return a.section === 'AM' ? -1 : 1;
-      return a.questionNo - b.questionNo;
+      const ka = qNoSortKey(a.questionNo), kb = qNoSortKey(b.questionNo);
+      if (ka.num !== kb.num) return ka.num - kb.num;
+      return ka.raw < kb.raw ? -1 : ka.raw > kb.raw ? 1 : 0;
     });
   } else {
     questions.sort((a, b) => {
@@ -2010,7 +2040,7 @@ function startExamMode() {
 
   if (method === 'paper') {
     examState.isRunning = false; // PDFモードはタイマー不要
-    generateExamPaper(questions, examType, source, yearLabel, shuffleChoices, choiceOrders);
+    generateExamPaper(questions, examType, source, yearLabel, shuffleChoices, choiceOrders, false, null, randomizeOrder);
     return;
   }
 
@@ -2335,7 +2365,7 @@ async function finishExam() {
   showScreen('exam-result', '試験結果', `${examState.examType === 'hari_kyu' ? 'はりきゅう' : 'あマ指'}`);
 }
 
-async function generateExamPaper(questions, examType, source, yearLabel, shuffleChoices, choiceOrders, skipSave, createdAt) {
+async function generateExamPaper(questions, examType, source, yearLabel, shuffleChoices, choiceOrders, skipSave, createdAt, randomizeOrder) {
   const typeLabel = examType === 'hari_kyu' ? 'はり師きゅう師' : 'あマ指';
   const titleSuffix = yearLabel || (source === 'year' ? '年度模試' : 'ランダム模試');
 
@@ -2427,6 +2457,9 @@ async function generateExamPaper(questions, examType, source, yearLabel, shuffle
   const shuffleNote = shuffleChoices
     ? '<br>・<strong>選択肢の順序はランダム化</strong>されています。元の問題と異なる順序で表示されます。'
     : '';
+  const orderNote = (source === 'year' && randomizeOrder)
+    ? '<br>・<strong>出題順はランダム化</strong>されています。元の問題番号順とは異なる順序で出題されます。'
+    : '';
 
   const html = `
 <!DOCTYPE html>
@@ -2477,7 +2510,7 @@ async function generateExamPaper(questions, examType, source, yearLabel, shuffle
   <strong>注意事項</strong>
   ・各問題には1〜4の四つの選択肢があります。質問に最も適した答えを一つ選んでください。<br>
   ・午前(AM)・午後(PM)それぞれ制限時間は2時間10分です。<br>
-  ・解答は別紙またはお手元の解答用紙に記入してください。${shuffleNote}
+  ・解答は別紙またはお手元の解答用紙に記入してください。${shuffleNote}${orderNote}
 </div>
 
 ${renderSection('午前(AM)', amQs, 1, 0)}
