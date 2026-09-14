@@ -576,7 +576,7 @@
       <div class="setting-row" id="exam-shuffle-order-row" style="opacity: .5;">
         <div>
           <div class="lbl">出題順をランダム化</div>
-          <div class="desc">「年度を選んで出題」の場合のみ選択可。OFF(既定)は元の問題番号順、ONで科目構成順・科目内ランダム</div>
+          <div class="desc">「全範囲からランダム出題」以外の場合に選択可。OFF(既定)は元の問題番号順、ONで科目構成順・科目内ランダム</div>
         </div>
         <label class="switch">
           <input type="checkbox" id="exam-shuffle-order" disabled>
@@ -1778,7 +1778,9 @@ function getQuestionsForSection(row, allQuestions, examType, yearFilter, exclude
 }
 
 // 本試験形式の問題抽出(科目別に必要数を抜粋)
-function buildExamQuestions(examType, allQuestions, yearFilter, excludeMuted = false) {
+// useActualCount=true の場合、科目構成表(EXAM_STRUCTURE)の人数に合わせず、
+// その抽出条件(年度など)に実在する問題数をそのまま採用する（＝不足扱いにしない）
+function buildExamQuestions(examType, allQuestions, yearFilter, excludeMuted = false, useActualCount = false) {
   const structure = EXAM_STRUCTURE[examType];
   const result = {
     questions: [],
@@ -1794,8 +1796,8 @@ function buildExamQuestions(examType, allQuestions, yearFilter, excludeMuted = f
     let pool = getQuestionsForSection(row, baseQuestions, examType, yearFilter, true);
     // 出題除外問題を除外（オプション選択時のみ）
     if (excludeMuted) pool = pool.filter(q => !isMutedQuestion(q));
-    const needed = row.count;
     const available = pool.length;
+    const needed = useActualCount ? available : row.count;
     const taken = Math.min(needed, available);
 
     let picked = [];
@@ -1913,11 +1915,12 @@ function updateExamSourceUI() {
   origWrap.style.display = source === 'original' ? 'block' : 'none';
   origSel.disabled = source !== 'original';
 
-  // 「出題順をランダム化」は年度指定時のみ意味を持つ（それ以外は元々問題番号順の概念がない）
+  // 「出題順をランダム化」は元の問題順が存在する「年度指定」「本試験専用問題」でのみ意味を持つ
+  // （「全範囲からランダム出題」は元々問題順の概念がなく、常に科目構成順のランダム抽出のため対象外）
   const orderCb = document.getElementById('exam-shuffle-order');
   const orderRow = document.getElementById('exam-shuffle-order-row');
-  if (orderCb) orderCb.disabled = source !== 'year';
-  if (orderRow) orderRow.style.opacity = source === 'year' ? '1' : '.5';
+  if (orderCb) orderCb.disabled = source === 'random';
+  if (orderRow) orderRow.style.opacity = source === 'random' ? '.5' : '1';
 }
 
 function startExamMode() {
@@ -1964,14 +1967,20 @@ function startExamMode() {
   }
 
   // 科目構成に従って問題抽出
-  const buildResult = buildExamQuestions(examType, state.questions, yearFilter, excludeMuted);
+  // 年度指定(source==='year')は実際に存在したその回の試験を再現するモードのため、
+  // 科目構成表の人数(EXAM_STRUCTURE)に合わせず、その年度に実在する問題をそのまま全て採用する
+  // （出題基準は第29回で全面改定されており、28回以前は科目ごとの出題数自体が現行と異なるため、
+  // 　現行基準の人数を「不足」として扱うのは誤り）。
+  // ランダム出題・本試験専用問題は従来どおり、現行の科目構成表に合わせて抽出する。
+  const useActualCount = source === 'year';
+  const buildResult = buildExamQuestions(examType, state.questions, yearFilter, excludeMuted, useActualCount);
 
   if (buildResult.questions.length === 0) {
     alert('該当する問題が一切ありません。問題データを取り込んでください。');
     return;
   }
 
-  // 不足科目の警告
+  // 不足科目の警告（年度指定時は上記の理由によりそもそも発生しない）
   if (buildResult.shortages.length > 0) {
     const shortageMsg = buildResult.shortages.map(s =>
       `・${s.subject}(${s.section}): ${s.available}/${s.needed}問`
@@ -1985,9 +1994,9 @@ function startExamMode() {
   let questions = buildResult.questions;
 
   // 問題のソート
-  // ・年度指定時：既定は元の問題番号順。「出題順をランダム化」ONなら科目構成順のまま(科目内は抽出時のランダム順)
-  // ・それ以外(全範囲ランダム・本試験専用問題)：常に科目構成順(AM→PM順)のみ
-  const randomizeOrder = source === 'year' && document.getElementById('exam-shuffle-order').checked;
+  // ・年度指定/本試験専用問題：既定は元の問題番号順。「出題順をランダム化」ONなら科目構成順のまま(科目内は抽出時のランダム順)
+  // ・全範囲からランダム出題：常に科目構成順(AM→PM順)のみ（元の問題順という概念がないため）
+  const randomizeOrder = source !== 'random' && document.getElementById('exam-shuffle-order').checked;
   // 問題番号は「15改」のように訂正・改題を示す接尾辞が付く場合があり、単純な引き算(a.questionNo - b.questionNo)では
   // 数値化できずNaNになって並び順が崩れる。先頭の数字部分だけを取り出して数値比較し、
   // 数値部分が同じ場合(例:"15"と"15改")は元の表記の文字列比較で安定的に順序付けする。
@@ -1996,7 +2005,7 @@ function startExamMode() {
     const m = s.match(/^(\d+)/);
     return { num: m ? parseInt(m[1], 10) : Infinity, raw: s };
   };
-  if (source === 'year' && !randomizeOrder) {
+  if (source !== 'random' && !randomizeOrder) {
     questions.sort((a, b) => {
       if (a.section !== b.section) return a.section === 'AM' ? -1 : 1;
       const ka = qNoSortKey(a.questionNo), kb = qNoSortKey(b.questionNo);
@@ -2457,7 +2466,7 @@ async function generateExamPaper(questions, examType, source, yearLabel, shuffle
   const shuffleNote = shuffleChoices
     ? '<br>・<strong>選択肢の順序はランダム化</strong>されています。元の問題と異なる順序で表示されます。'
     : '';
-  const orderNote = (source === 'year' && randomizeOrder)
+  const orderNote = (source !== 'random' && randomizeOrder)
     ? '<br>・<strong>出題順はランダム化</strong>されています。元の問題番号順とは異なる順序で出題されます。'
     : '';
 
