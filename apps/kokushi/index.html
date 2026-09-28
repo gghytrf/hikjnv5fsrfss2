@@ -483,9 +483,21 @@
     </div>
 
     <div class="card">
-      <h2>② 出題方法</h2>
+      <h2>② 出題する科目</h2>
+      <div style="font-size: 12px; color: #4a5a6a; line-height: 1.7; padding: 10px 12px; background: #f5f7fa; border-radius: 6px; margin-bottom: 8px;">
+        未選択の場合は全科目から出題します。選択した科目は記憶され、次回以降も引き継がれます。
+      </div>
+      <div style="display: flex; gap: 8px; margin-bottom: 6px;">
+        <button class="btn outline" style="flex: 1; font-size: 13px; padding: 8px;" onclick="dailySelectAllSubjects(true)">すべて選択</button>
+        <button class="btn outline" style="flex: 1; font-size: 13px; padding: 8px;" onclick="dailySelectAllSubjects(false)">選択解除</button>
+      </div>
+      <div id="daily-subject-list"></div>
+    </div>
+
+    <div class="card">
+      <h2>③ 出題方法</h2>
       <div style="font-size: 12px; color: #4a5a6a; line-height: 1.8; padding: 12px; background: #f5f7fa; border-radius: 6px;">
-        <strong>全科目（不適切問題を含む）から、可能な限り均等に分散して出題</strong>します。<br>
+        <strong>問題数を科目数で割って各科目に均等に配分</strong>します（割り切れない余りは、対象科目からランダムに1問ずつ追加）。<br>
         未出題の問題を優先的に出題し、不足する場合は出題済み問題から復習日が近いものを補充します。<br>
         試験種別フィルター（設定画面）の対象範囲のみが出題対象となります。
       </div>
@@ -500,12 +512,20 @@
       <h2>① 試験種別</h2>
       <div class="exam-option-list" id="exam-type-options">
         <label class="radio-row">
-          <input type="radio" name="exam-type" value="hari_kyu" checked>
+          <input type="radio" name="exam-type" value="hari_kyu" checked onchange="onExamTypeChange()">
           <span>はり師きゅう師(180問・AM90問+PM90問)</span>
         </label>
         <label class="radio-row">
-          <input type="radio" name="exam-type" value="amashi">
+          <input type="radio" name="exam-type" value="hari_kyu_half" onchange="onExamTypeChange()">
+          <span>はり師きゅう師 ハーフテスト(90問・制限時間2時間10分)</span>
+        </label>
+        <label class="radio-row">
+          <input type="radio" name="exam-type" value="amashi" onchange="onExamTypeChange()">
           <span>あマ指(160問・AM80問+PM80問)</span>
+        </label>
+        <label class="radio-row">
+          <input type="radio" name="exam-type" value="amashi_half" onchange="onExamTypeChange()">
+          <span>あマ指 ハーフテスト(80問・制限時間2時間10分)</span>
         </label>
       </div>
     </div>
@@ -555,7 +575,7 @@
           <input type="radio" name="exam-method" value="screen">
           <span>📱 画面で実施(時間制限付き)</span>
         </label>
-        <div style="padding: 0 0 8px 32px; font-size: 12px; color: #7a8a99;">
+        <div id="method-screen-desc" style="padding: 0 0 8px 32px; font-size: 12px; color: #7a8a99;">
           AM・PMそれぞれ2時間10分の制限時間で解きます。
         </div>
       </div>
@@ -1567,6 +1587,9 @@ async function afterDataReady() {
   const settingExam = await dbGet('settings', 'examType');
   if (settingExam) state.settings.examType = settingExam.value;
 
+  const settingDailySubj = await dbGet('settings', 'dailySubjects');
+  if (settingDailySubj && Array.isArray(settingDailySubj.value)) dailyState.subjects = settingDailySubj.value;
+
   const settingExclude = await dbGet('settings', 'excludeYears');
   if (settingExclude) state.settings.excludeYears = settingExclude.value || [];
 
@@ -1595,8 +1618,12 @@ async function afterDataReady() {
 // 今日の演習モード
 //=========================================================
 const dailyState = {
-  totalCount: 20
+  totalCount: 20,
+  subjects: []   // 選択された科目（空＝全科目）。settings 'dailySubjects' に記憶
 };
+
+// 科目の表示順（本試験の科目分類表に準拠。未知の科目は末尾）
+const DAILY_SUBJECT_ORDER = ['医療概論', '衛生学・公衆衛生学', '関係法規', '解剖学', '生理学', '病理学概論', '臨床医学総論', '臨床医学各論', 'リハビリテーション医学', '総合問題(基礎科目)', '東洋医学概論', '経絡経穴概論', '東洋医学臨床論', '総合問題(専門科目)', 'はり理論', 'きゅう理論', 'あマ指理論', 'あん摩マッサージ指圧理論', '不適切問題'];
 
 function goDailySetup() {
   const filtered = filterByExamType(state.questions);
@@ -1604,7 +1631,8 @@ function goDailySetup() {
     alert('該当する問題がありません。設定の試験種別フィルターをご確認ください。');
     return;
   }
-  showScreen('daily-setup', '今日の演習', '問題数を選んで開始');
+  renderDailySubjectList();
+  showScreen('daily-setup', '今日の演習', '問題数・科目を選んで開始');
 }
 
 function selectDailyCount(count) {
@@ -1612,6 +1640,60 @@ function selectDailyCount(count) {
   document.querySelectorAll('.daily-count-btn').forEach(btn => {
     btn.classList.toggle('active', parseInt(btn.dataset.count) === count);
   });
+}
+
+// 今日の演習の対象となる科目と問題数（dailyEnabled=true・試験種別フィルター適用後）
+function getDailySubjectCounts() {
+  const counts = {};
+  filterByExamType(state.questions).forEach(q => {
+    if (!q.dailyEnabled) return;
+    counts[q.subject] = (counts[q.subject] || 0) + 1;
+  });
+  return counts;
+}
+
+function renderDailySubjectList() {
+  const box = document.getElementById('daily-subject-list');
+  if (!box) return;
+  const counts = getDailySubjectCounts();
+  const names = Object.keys(counts).sort((a, b) => {
+    const ai = DAILY_SUBJECT_ORDER.indexOf(a), bi = DAILY_SUBJECT_ORDER.indexOf(b);
+    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+  });
+  box.innerHTML = '';
+  names.forEach(name => {
+    const row = document.createElement('label');
+    row.className = 'daily-subject-row';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = dailyState.subjects.includes(name);
+    cb.onchange = () => toggleDailySubject(name, cb.checked);
+    const nm = document.createElement('span');
+    nm.className = 'name';
+    nm.textContent = name;
+    const info = document.createElement('span');
+    info.className = 'info';
+    info.textContent = counts[name] + '問';
+    row.appendChild(cb); row.appendChild(nm); row.appendChild(info);
+    box.appendChild(row);
+  });
+}
+
+async function saveDailySubjects() {
+  try { await dbPut('settings', { key: 'dailySubjects', value: dailyState.subjects.slice() }); } catch (e) {}
+}
+
+function toggleDailySubject(name, checked) {
+  const set = new Set(dailyState.subjects);
+  if (checked) set.add(name); else set.delete(name);
+  dailyState.subjects = Array.from(set);
+  saveDailySubjects();
+}
+
+function dailySelectAllSubjects(on) {
+  dailyState.subjects = on ? Object.keys(getDailySubjectCounts()) : [];
+  renderDailySubjectList();
+  saveDailySubjects();
 }
 
 function startDailyMode() {
@@ -1631,13 +1713,16 @@ function startDailyMode() {
     bySubject[q.subject].push(q);
   });
 
-  // 科目リストをその都度シャッフル（毎回ランダムな科目順になる）
-  const availableSubjects = shuffleArray(Object.keys(bySubject));
-
-  if (availableSubjects.length === 0) {
+  const allSubjects = Object.keys(bySubject);
+  if (allSubjects.length === 0) {
     alert('該当する問題がありません');
     return;
   }
+
+  // 出題対象科目：選択科目（現在の対象に存在するもの）。未選択なら全科目。
+  // シャッフルしておくことで、余りの配分先が毎回ランダムになる
+  const selected = dailyState.subjects.filter(s => bySubject[s]);
+  const availableSubjects = shuffleArray([...(selected.length > 0 ? selected : allSubjects)]);
 
   // 各科目から「未出題優先 + 復習日が近い順」で並べたキューを作る
   const subjectQueues = {};
@@ -1659,8 +1744,17 @@ function startDailyMode() {
     subjectQueues[subj] = [...shuffledUntried, ...tried];
   }
 
-  // ランダムな科目順でラウンドロビン出題（毎回科目ごとの問題数が異なる）
+  // 問題数 ÷ 科目数 を各科目に配分。余りは（シャッフル済みの）先頭の科目から1問ずつ＝ランダムな科目へ
+  const n = availableSubjects.length;
+  const base = Math.floor(totalCount / n);
+  const remainder = totalCount % n;
   const picked = [];
+  availableSubjects.forEach((subj, idx) => {
+    const quota = base + (idx < remainder ? 1 : 0);
+    picked.push(...subjectQueues[subj].splice(0, quota));
+  });
+
+  // 科目の問題数が足りず配分に満たなかった分は、他の対象科目から順に補充
   let exhausted = false;
   while (picked.length < totalCount && !exhausted) {
     exhausted = true;
@@ -1684,8 +1778,11 @@ function startDailyMode() {
     if (!confirm(`利用可能な問題が ${picked.length}問 のみです（希望: ${totalCount}問）。\n続行しますか?`)) return;
   }
 
+  // 科目がまとまらないよう出題順をシャッフル
+  const queue = shuffleArray([...picked]);
+
   // 通常の出題モードに乗せる
-  state.questionQueue = picked;
+  state.questionQueue = queue;
   state.currentIndex = 0;
   state.currentMode = 'daily';
   state.currentSubject = null;
@@ -1750,6 +1847,23 @@ const EXAM_STRUCTURE = {
   }
 };
 
+// ハーフテストの科目別問題数（本試験の半分。奇数は 解剖学5・生理学4 のように振り分け）
+// はりきゅう: AM45問 + PM45問 = 90問 / あマ指: AM40問 + PM40問 = 80問
+const EXAM_HALF_COUNTS = {
+  hari_kyu: {
+    '医療概論': 2, '衛生学・公衆衛生学': 3, '関係法規': 2, '解剖学': 5, '生理学': 4,
+    '病理学概論': 3, '臨床医学総論': 5, '臨床医学各論': 11, 'リハビリテーション医学': 6, '総合問題(基礎科目)': 4,
+    '東洋医学概論': 8, '経絡経穴概論': 10, '東洋医学臨床論': 12, '総合問題(専門科目)': 5,
+    'はり理論': 5, 'きゅう理論': 5
+  },
+  amashi: {
+    '医療概論': 2, '衛生学・公衆衛生学': 3, '関係法規': 2, '解剖学': 4, '生理学': 4,
+    '病理学概論': 3, '臨床医学総論': 5, '臨床医学各論': 8, 'リハビリテーション医学': 6, '総合問題(基礎科目)': 3,
+    '東洋医学概論': 7, '経絡経穴概論': 7, '東洋医学臨床論': 15, '総合問題(専門科目)': 5,
+    'あマ指理論': 6
+  }
+};
+
 // 構成行の問題プールを取得
 function getQuestionsForSection(row, allQuestions, examType, yearFilter, excludeUnsuitable) {
   const subjectsToMatch = row.mergedSubjects ? [...row.mergedSubjects] : [row.subject];
@@ -1780,7 +1894,7 @@ function getQuestionsForSection(row, allQuestions, examType, yearFilter, exclude
 // 本試験形式の問題抽出(科目別に必要数を抜粋)
 // useActualCount=true の場合、科目構成表(EXAM_STRUCTURE)の人数に合わせず、
 // その抽出条件(年度など)に実在する問題数をそのまま採用する（＝不足扱いにしない）
-function buildExamQuestions(examType, allQuestions, yearFilter, excludeMuted = false, useActualCount = false) {
+function buildExamQuestions(examType, allQuestions, yearFilter, excludeMuted = false, useActualCount = false, isHalf = false) {
   const structure = EXAM_STRUCTURE[examType];
   const result = {
     questions: [],
@@ -1797,7 +1911,14 @@ function buildExamQuestions(examType, allQuestions, yearFilter, excludeMuted = f
     // 出題除外問題を除外（オプション選択時のみ）
     if (excludeMuted) pool = pool.filter(q => !isMutedQuestion(q));
     const available = pool.length;
-    const needed = useActualCount ? available : row.count;
+    let needed;
+    if (isHalf) {
+      // ハーフ：年度指定は実在数の半分（切り上げ）、それ以外は半分用の科目別問題数
+      const halfMap = EXAM_HALF_COUNTS[examType] || {};
+      needed = useActualCount ? Math.ceil(available / 2) : (halfMap[row.subject] != null ? halfMap[row.subject] : Math.ceil(row.count / 2));
+    } else {
+      needed = useActualCount ? available : row.count;
+    }
     const taken = Math.min(needed, available);
 
     let picked = [];
@@ -1837,6 +1958,8 @@ const examState = {
   endTime: null,
   amTimeLimit: 130 * 60,
   pmTimeLimit: 130 * 60,
+  halfTimeLimit: 130 * 60, // ハーフテストは全体で2時間10分（AM/PM区別なし）
+  isHalf: false,
   amStartTime: null,
   pmStartTime: null,
   timerInterval: null,
@@ -1849,43 +1972,71 @@ const examState = {
   choiceOrders: {},  // {questionIndex: [origIdx順序], correctMapped: 表示上の正答番号}
 };
 
-function goExamSetup() {
-  // 「年度を選んで出題」用：dailyEnabled=true の問題が存在する年度のみ一覧化
-  // （本試験専用問題の年度は含めない）
+function getSelectedExamBaseType() {
+  const v = document.querySelector('input[name="exam-type"]:checked').value;
+  return v.replace(/_half$/, '');
+}
+
+// 試験種別（ハーフ含む）が変わったときの表示更新
+function onExamTypeChange() {
+  const v = document.querySelector('input[name="exam-type"]:checked').value;
+  const isHalf = v.endsWith('_half');
+  const paperRadio = document.querySelector('input[name="exam-method"][value="paper"]');
+  const screenRadio = document.querySelector('input[name="exam-method"][value="screen"]');
+  const paperRow = document.getElementById('method-paper-row');
+  const paperDesc = document.getElementById('method-paper-desc');
+  const screenDesc = document.getElementById('method-screen-desc');
+  if (isHalf) {
+    screenRadio.checked = true;
+    paperRadio.disabled = true;
+    if (paperRow) paperRow.style.opacity = '.5';
+    if (paperDesc) paperDesc.textContent = 'ハーフテストは画面実施のみです。';
+    if (screenDesc) screenDesc.textContent = '問題数の半分・全体で2時間10分の制限時間(AM・PMの区別なし)で解きます。';
+  } else {
+    paperRadio.disabled = false;
+    if (paperRow) paperRow.style.opacity = '1';
+    if (paperDesc) paperDesc.textContent = '問題用紙PDFを出力して印刷します。自己採点後、結果を入力できます。';
+    if (screenDesc) screenDesc.textContent = 'AM・PMそれぞれ2時間10分の制限時間で解きます。';
+  }
+  populateExamSelectors();
+}
+
+// 選択中の試験種別に該当する年度／本試験専用問題だけをプルダウンに表示
+function populateExamSelectors() {
+  const examType = getSelectedExamBaseType();
+  const typeLabel = examType === 'hari_kyu' ? 'はりきゅう' : 'あマ指';
+
+  // 「年度を選んで出題」用：dailyEnabled=true の問題が存在する年度のみ（本試験専用問題は含めない）
+  const select = document.getElementById('exam-year-select');
+  const prevYear = select.value;
   const yearSet = new Set();
   state.questions.forEach(q => {
-    if (q.dailyEnabled && !isNaN(Number(q.year))) yearSet.add(`${q.examType}_${q.year}`);
+    if (q.examType === examType && q.dailyEnabled && !isNaN(Number(q.year))) yearSet.add(Number(q.year));
   });
-  const years = Array.from(yearSet).sort();
-
-  const select = document.getElementById('exam-year-select');
-  select.innerHTML = '<option value="">取り込み済みの年度から選択...</option>';
-  years.forEach(key => {
-    const [type, year] = key.split('_').slice(-2);
-    // hari_kyu_34 -> ['hari', 'kyu', '34']の場合があるので最後の2要素
-    const parts = key.split('_');
-    const yr = parts[parts.length - 1];
-    const tp = parts.slice(0, -1).join('_');
-    const typeLabel = tp === 'hari_kyu' ? 'はりきゅう' : 'あマ指';
-    const opt = document.createElement('option');
-    opt.value = key;
-    opt.textContent = `${typeLabel} 第${yr}回`;
-    select.appendChild(opt);
-  });
+  const years = Array.from(yearSet).sort((x, y) => x - y);
 
   if (years.length === 0) {
     select.innerHTML = '<option value="">問題データがありません</option>';
+  } else {
+    select.innerHTML = '<option value="">取り込み済みの年度から選択...</option>';
+    years.forEach(yr => {
+      const opt = document.createElement('option');
+      opt.value = `${examType}_${yr}`;
+      opt.textContent = `${typeLabel} 第${yr}回`;
+      select.appendChild(opt);
+    });
+    if (prevYear && Array.from(select.options).some(o => o.value === prevYear)) select.value = prevYear;
   }
 
-  // 「本試験専用問題」用：dailyEnabled=false かつ subjectEnabled=false かつ examEnabled=true の問題
-  // 年度（year）の値ごとにグルーピングしてドロップダウンに表示
+  // 「本試験専用問題」用：選択中の試験種別の専用問題のみ
+  const origSelect = document.getElementById('exam-original-select');
+  const prevOrig = origSelect.value;
   const originalYearSet = new Set();
   state.questions.forEach(q => {
-    if (isExamOnlyQuestion(q)) originalYearSet.add(q.year);
+    if (q.examType === examType && isExamOnlyQuestion(q)) originalYearSet.add(q.year);
   });
   const originalYears = Array.from(originalYearSet).sort();
 
-  const origSelect = document.getElementById('exam-original-select');
   if (originalYears.length === 0) {
     origSelect.innerHTML = '<option value="">本試験専用問題がありません</option>';
   } else {
@@ -1896,8 +2047,12 @@ function goExamSetup() {
       opt.textContent = yr;
       origSelect.appendChild(opt);
     });
+    if (prevOrig && Array.from(origSelect.options).some(o => o.value === prevOrig)) origSelect.value = prevOrig;
   }
+}
 
+function goExamSetup() {
+  onExamTypeChange(); // プルダウン再構築＋ハーフ時の実施方法制御
   updateExamSourceUI();
   showScreen('exam-setup', '本試験形式モード', '実施条件を選択');
 }
@@ -1924,9 +2079,12 @@ function updateExamSourceUI() {
 }
 
 function startExamMode() {
-  const examType = document.querySelector('input[name="exam-type"]:checked').value;
+  const examTypeRaw = document.querySelector('input[name="exam-type"]:checked').value;
+  const isHalf = examTypeRaw.endsWith('_half');
+  const examType = examTypeRaw.replace(/_half$/, '');
   const source = document.querySelector('input[name="exam-source"]:checked').value;
   let method = document.querySelector('input[name="exam-method"]:checked').value;
+  if (isHalf) method = 'screen'; // ハーフテストは画面実施のみ
   // 学習履歴への反映は必ず行う（オプションは廃止。実際に解答した試験のみ記録される）
   const recordHistory = true;
   const shuffleChoices = document.getElementById('exam-shuffle-choices').checked;
@@ -1973,7 +2131,7 @@ function startExamMode() {
   // 　現行基準の人数を「不足」として扱うのは誤り）。
   // ランダム出題・本試験専用問題は従来どおり、現行の科目構成表に合わせて抽出する。
   const useActualCount = source === 'year';
-  const buildResult = buildExamQuestions(examType, state.questions, yearFilter, excludeMuted, useActualCount);
+  const buildResult = buildExamQuestions(examType, state.questions, yearFilter, excludeMuted, useActualCount, isHalf);
 
   if (buildResult.questions.length === 0) {
     alert('該当する問題が一切ありません。問題データを取り込んでください。');
@@ -1985,7 +2143,7 @@ function startExamMode() {
     const shortageMsg = buildResult.shortages.map(s =>
       `・${s.subject}(${s.section}): ${s.available}/${s.needed}問`
     ).join('\n');
-    const totalNeeded = EXAM_STRUCTURE[examType].totalQ;
+    const totalNeeded = isHalf ? EXAM_STRUCTURE[examType].totalQ / 2 : EXAM_STRUCTURE[examType].totalQ;
     const actualCount = buildResult.questions.length;
     const msg = `以下の科目で問題数が不足しています:\n\n${shortageMsg}\n\n本来${totalNeeded}問の試験を、${actualCount}問で実施します。\n\n続行しますか?`;
     if (!confirm(msg)) return;
@@ -2037,6 +2195,7 @@ function startExamMode() {
   examState.choiceNotes = {}; // 本試験中の選択肢メモ {questionIndex: {origIdx: 'sei'|'go'|'hate'}}
   examState.currentIndex = 0;
   examState.examType = examType;
+  examState.isHalf = isHalf;
   examState.recordHistory = recordHistory;
   examState.examMethod = method;
   examState.shuffleChoices = shuffleChoices;
@@ -2069,7 +2228,10 @@ function updateExamTimer() {
 
   const now = new Date();
   let elapsed, limit;
-  if (examState.currentSection === 'AM') {
+  if (examState.isHalf) {
+    elapsed = Math.floor((now - examState.startTime) / 1000);
+    limit = examState.halfTimeLimit;
+  } else if (examState.currentSection === 'AM') {
     elapsed = Math.floor((now - examState.amStartTime) / 1000);
     limit = examState.amTimeLimit;
   } else {
@@ -2092,6 +2254,7 @@ function updateExamTimer() {
 
   if (remain === 0) {
     // 時間切れ
+    if (examState.isHalf) { showToast('時間切れ。試験を終了します'); finishExam(); return; }
     if (examState.currentSection === 'AM') {
       // PM開始の確認
       const hasPM = examState.questions.some(q => q.section === 'PM');
@@ -2130,8 +2293,14 @@ function showExamQuestion() {
   const sectionQs = examState.questions.filter(qq => qq.section === q.section);
   const sectionIdx = sectionQs.findIndex(qq => qq === q) + 1;
 
-  document.getElementById('exam-section-label').textContent = q.section;
-  document.getElementById('exam-progress-text').textContent = `問${sectionIdx} / ${sectionQs.length}`;
+  if (examState.isHalf) {
+    // ハーフテストはAM/PMの区別なし。通し番号で表示
+    document.getElementById('exam-section-label').textContent = 'ハーフ';
+    document.getElementById('exam-progress-text').textContent = `問${examState.currentIndex + 1} / ${examState.questions.length}`;
+  } else {
+    document.getElementById('exam-section-label').textContent = q.section;
+    document.getElementById('exam-progress-text').textContent = `問${sectionIdx} / ${sectionQs.length}`;
+  }
 
   const examTypeBadge = document.getElementById('exam-q-type');
   if (q.examType === 'amashi') {
@@ -2207,7 +2376,7 @@ function showExamQuestion() {
   const isLast = examState.currentIndex === examState.questions.length - 1;
   document.getElementById('exam-next-btn').textContent = isLast ? '試験終了 →' : '次へ →';
 
-  showScreen('exam-running', '本試験形式モード', `${examState.examType === 'hari_kyu' ? 'はりきゅう' : 'あマ指'}`);
+  showScreen('exam-running', '本試験形式モード', `${examState.examType === 'hari_kyu' ? 'はりきゅう' : 'あマ指'}${examState.isHalf ? ' ハーフ' : ''}`);
 }
 
 function examSelectChoice(num) {
@@ -2371,7 +2540,7 @@ async function finishExam() {
   const es = elapsed % 60;
   document.getElementById('result-time').textContent = `${eh}時間 ${em}分 ${es}秒`;
 
-  showScreen('exam-result', '試験結果', `${examState.examType === 'hari_kyu' ? 'はりきゅう' : 'あマ指'}`);
+  showScreen('exam-result', '試験結果', `${examState.examType === 'hari_kyu' ? 'はりきゅう' : 'あマ指'}${examState.isHalf ? ' ハーフ' : ''}`);
 }
 
 async function generateExamPaper(questions, examType, source, yearLabel, shuffleChoices, choiceOrders, skipSave, createdAt, randomizeOrder) {
@@ -2822,6 +2991,7 @@ async function submitPaperResult() {
   state.questions.forEach(q => { masterById[q.id] = q; });
 
   examState.examType = session.examType;
+  examState.isHalf = false;
   examState.startTime = new Date(session.createdAt);
   examState.endTime = new Date();
   examState.questions = session.items.map(it => {
@@ -3893,6 +4063,17 @@ function showQuestion() {
   document.getElementById('action-buttons').style.display = 'flex';
   document.getElementById('submit-confident').disabled = true;
   document.getElementById('submit-unsure').disabled = true;
+  // 「自信あり／あいまい」の区別はレベル3以上のみ。未出題・Lv1・Lv2は「解答」ボタンのみ
+  {
+    const _prog = state.progress[q.id];
+    const _lv = _prog ? (_prog.intervalLevel || 0) : 0;
+    const _useConf = _lv >= 3;
+    const _bc = document.getElementById('submit-confident');
+    const _bu = document.getElementById('submit-unsure');
+    _bc.style.display = _useConf ? '' : 'none';
+    _bu.textContent = _useConf ? 'あいまい 解答' : '解答';
+    _bu.className = _useConf ? 'btn outline' : 'btn';
+  }
   document.getElementById('next-btn').style.display = 'none';
   document.getElementById('mute-btn').style.display = 'none';
   document.getElementById('back-to-list-btn').style.display = 'none';
