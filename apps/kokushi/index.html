@@ -274,6 +274,25 @@
     background: #fff176; color: inherit; border-radius: 2px; padding: 0 1px;
   }
 
+  /* 検索画面：入力欄・案内 */
+  .search-note {
+    font-size: calc(13px * var(--fs)); color: #2c5f7c; background: #e3f0f7;
+    border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; line-height: 1.7;
+  }
+  .search-field-label { display: block; font-size: 12px; font-weight: 600; color: #4a5a6a; margin: 0 0 6px; }
+  .search-field {
+    width: 100%; box-sizing: border-box; padding: 12px 14px; border: 2px solid #d4dde4;
+    border-radius: 10px; font-size: 15px; font-family: inherit; outline: none;
+    transition: border-color 0.15s; background: white;
+  }
+  .search-field:focus { border-color: #2c5f7c; }
+  /* 検索結果：除外されている問題のマーク */
+  .search-result-card.excluded { background: #fffaf0; border-left-color: #e0a030; }
+  .search-ex-tag {
+    font-size: 11px; background: #ffc107; color: #212529; padding: 2px 8px;
+    border-radius: 10px; font-weight: 600;
+  }
+
   /* 紙試験結果入力 */
   .paper-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
   .paper-cell { display: flex; flex-direction: column; align-items: center; padding: 4px; border: 1px solid #d4dde4; border-radius: 6px; background: white; }
@@ -362,7 +381,7 @@
     </button>
     <button class="menu-btn" onclick="goSearch()">
       <span class="icon">🔍</span><span class="label">問題検索</span>
-      <div class="desc">問題文・選択肢からキーワード検索</div>
+      <div class="desc">キーワード・年度・問題番号から検索</div>
     </button>
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 0;">
       <button class="menu-btn" onclick="goMemoList()" style="margin-bottom: 0;">
@@ -403,52 +422,42 @@
     <div class="card">
       <h2>🔍 問題検索</h2>
 
-      <!-- 検索箇所の選択 -->
-      <div style="font-size: 12px; font-weight: 600; color: #4a5a6a; margin-bottom: 6px;">検索箇所</div>
-      <div style="display: flex; gap: 8px; margin-bottom: 14px;">
-        <label style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px; background: #f5f7fa; border: 2px solid #d4dde4; border-radius: 10px; cursor: pointer; font-size: 14px; transition: all 0.15s;" id="search-target-q-label">
-          <input type="radio" name="search-target" value="question" checked id="search-target-q" style="accent-color: #2c5f7c; width: 16px; height: 16px;">
-          問題文から検索
-        </label>
-        <label style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px; background: #f5f7fa; border: 2px solid #d4dde4; border-radius: 10px; cursor: pointer; font-size: 14px; transition: all 0.15s;" id="search-target-c-label">
-          <input type="radio" name="search-target" value="choices" id="search-target-c" style="accent-color: #2c5f7c; width: 16px; height: 16px;">
-          選択肢から検索
-        </label>
+      <!-- 検索範囲の案内（全問題に固定） -->
+      <div class="search-note">
+        📚 取り込まれている全問題（問題文・選択肢）から検索されます（本試験専用問題を除く）。<br>
+        出題除外・除外年度などの問題は、検索結果にマークが表示されます。
       </div>
 
-      <!-- 検索対象と検索範囲の区切り線 -->
-      <div style="border-top: 1px dashed #d4dde4; margin-bottom: 14px;"></div>
+      <!-- 検索キーワード -->
+      <label class="search-field-label" for="search-input">検索キーワード</label>
+      <input type="text" id="search-input" class="search-field"
+        placeholder="検索ワードを入力" style="margin-bottom: 12px;"
+        oninput="onSearchInput(event)">
 
-      <!-- 検索範囲の選択 -->
-      <div style="font-size: 12px; font-weight: 600; color: #4a5a6a; margin-bottom: 6px;">検索範囲</div>
-      <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-        <label style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px; background: #f5f7fa; border: 2px solid #d4dde4; border-radius: 10px; cursor: pointer; font-size: 14px; transition: all 0.15s;" id="search-scope-all-label">
-          <input type="radio" name="search-scope" value="all" id="search-scope-all" style="accent-color: #2c5f7c; width: 16px; height: 16px;">
-          全問題から検索
-        </label>
-        <label style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px; background: #e3f0f7; border: 2px solid #2c5f7c; border-radius: 10px; cursor: pointer; font-size: 14px; transition: all 0.15s; font-weight: 600;" id="search-scope-filtered-label">
-          <input type="radio" name="search-scope" value="filtered" checked id="search-scope-filtered" style="accent-color: #2c5f7c; width: 16px; height: 16px;">
-          出題される問題のみ
-        </label>
+      <!-- 年度・問題番号（数字のみ） -->
+      <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+        <div style="flex: 1; min-width: 0;">
+          <label class="search-field-label" for="search-year">年度（数字のみ）</label>
+          <input type="text" id="search-year" class="search-field" inputmode="numeric" pattern="[0-9]*"
+            maxlength="4" placeholder="例：34"
+            oninput="onSearchInput(event)" oncompositionend="sanitizeDigits(this)">
+        </div>
+        <div style="flex: 1; min-width: 0;">
+          <label class="search-field-label" for="search-qno">問題番号（数字のみ）</label>
+          <input type="text" id="search-qno" class="search-field" inputmode="numeric" pattern="[0-9]*"
+            maxlength="3" placeholder="例：15"
+            oninput="onSearchInput(event)" oncompositionend="sanitizeDigits(this)">
+        </div>
       </div>
 
       <!-- 検索ヒント -->
-      <div style="font-size: 12px; color: #7a8a99; background: #f5f7fa; border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; line-height: 1.7;">
+      <div style="font-size: 12px; color: #7a8a99; background: #f5f7fa; border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; line-height: 1.7;">
+        キーワード・年度・問題番号のいずれか1つ以上を入力してください（複数入力した場合はすべてに合致する問題を表示）。<br>
         例：<strong style="color: #2c5f7c;">橈骨神経</strong>　または　<strong style="color: #2c5f7c;">橈骨 神経</strong>（スペース区切りでAND検索）<br>
         全角・半角、大文字・小文字はどちらでもヒットします（<strong>3mmHg</strong> ＝ <strong>３ｍｍＨＧ</strong>）
       </div>
 
-      <!-- 検索ボックス -->
-      <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-        <input type="text" id="search-input"
-          placeholder="検索ワードを入力"
-          style="flex: 1; padding: 12px 14px; border: 2px solid #d4dde4; border-radius: 10px; font-size: 15px; font-family: inherit; outline: none; transition: border-color 0.15s;"
-          oninput="onSearchInput()"
-          onfocus="this.style.borderColor='#2c5f7c'"
-          onblur="this.style.borderColor='#d4dde4'"
-        >
-        <button class="btn" onclick="execSearch()" style="padding: 12px 18px; flex-shrink: 0;">検索</button>
-      </div>
+      <button class="btn" onclick="execSearch()" style="width: 100%; padding: 12px 18px; margin-bottom: 8px;">🔍 検索</button>
 
       <!-- メッセージ/ステータス -->
       <div id="search-status" style="font-size: 13px; color: #7a8a99; text-align: center; padding: 4px 0; min-height: 24px;"></div>
@@ -3119,60 +3128,44 @@ function reviewExamWrong() {
 //=========================================================
 function goSearch() {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  showScreen('search', '問題検索', '問題文・選択肢から検索');
-  // ラジオボタンの見た目を更新
-  updateSearchTargetUI();
-  updateSearchScopeUI();
+  showScreen('search', '問題検索', 'キーワード・年度・問題番号から検索');
   // 前回の結果をリセット
   document.getElementById('search-status').textContent = '';
   document.getElementById('search-results').style.display = 'none';
-  // ラジオ変更時にUIを更新
-  document.querySelectorAll('input[name="search-target"]').forEach(r => {
-    r.onchange = updateSearchTargetUI;
+  // Enterキーで検索（3つの入力欄すべて）
+  ['search-input', 'search-year', 'search-qno'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.onkeydown = (e) => { if (e.key === 'Enter' && !e.isComposing) execSearch(); };
   });
-  document.querySelectorAll('input[name="search-scope"]').forEach(r => {
-    r.onchange = updateSearchScopeUI;
-  });
-  // Enterキーで検索
-  const input = document.getElementById('search-input');
-  input.onkeydown = (e) => { if (e.key === 'Enter') execSearch(); };
 }
 
-function updateSearchTargetUI() {
-  const qLabel = document.getElementById('search-target-q-label');
-  const cLabel = document.getElementById('search-target-c-label');
-  const qChecked = document.getElementById('search-target-q').checked;
-  if (qLabel) {
-    qLabel.style.borderColor = qChecked ? '#2c5f7c' : '#d4dde4';
-    qLabel.style.background  = qChecked ? '#e3f0f7' : '#f5f7fa';
-    qLabel.style.fontWeight  = qChecked ? '600' : '400';
-  }
-  if (cLabel) {
-    cLabel.style.borderColor = !qChecked ? '#2c5f7c' : '#d4dde4';
-    cLabel.style.background  = !qChecked ? '#e3f0f7' : '#f5f7fa';
-    cLabel.style.fontWeight  = !qChecked ? '600' : '400';
-  }
+// 数字以外を取り除く（全角数字は半角に変換）
+function toHalfDigits(str) {
+  return String(str || '')
+    .replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
+    .replace(/[^0-9]/g, '');
+}
+function sanitizeDigits(el) {
+  const v = toHalfDigits(el.value);
+  if (v !== el.value) el.value = v;
 }
 
-function updateSearchScopeUI() {
-  const allLabel = document.getElementById('search-scope-all-label');
-  const filteredLabel = document.getElementById('search-scope-filtered-label');
-  const allChecked = document.getElementById('search-scope-all').checked;
-  if (allLabel) {
-    allLabel.style.borderColor = allChecked ? '#2c5f7c' : '#d4dde4';
-    allLabel.style.background  = allChecked ? '#e3f0f7' : '#f5f7fa';
-    allLabel.style.fontWeight  = allChecked ? '600' : '400';
+function onSearchInput(e) {
+  // 年度・問題番号は数字のみ（IME変換中は触らない）
+  if (e && e.target && (e.target.id === 'search-year' || e.target.id === 'search-qno')) {
+    if (!e.isComposing) sanitizeDigits(e.target);
   }
-  if (filteredLabel) {
-    filteredLabel.style.borderColor = !allChecked ? '#2c5f7c' : '#d4dde4';
-    filteredLabel.style.background  = !allChecked ? '#e3f0f7' : '#f5f7fa';
-    filteredLabel.style.fontWeight  = !allChecked ? '600' : '400';
-  }
-}
-
-function onSearchInput() {
   // 入力中はステータスをクリア
   document.getElementById('search-status').textContent = '';
+}
+
+// 検索結果に付ける「除外されている旨」のマーク一覧
+function getSearchExclusionTags(q) {
+  const tags = [];
+  if (state.mutedQuestions && state.mutedQuestions[q.id]) tags.push('🚫 出題除外');
+  if (isYearExcluded(q)) tags.push('📅 除外年度');
+  if (state.settings.examType !== 'all' && q.examType !== state.settings.examType) tags.push('⚙️ 試験種別設定外');
+  return tags;
 }
 
 // 全角↔半角を統一する正規化（英数字・記号を半角に、カタカナは全角に統一）
@@ -3201,45 +3194,56 @@ function normalizeText(str) {
 
 function execSearch() {
   const raw      = (document.getElementById('search-input').value || '').trim();
-  const target   = document.querySelector('input[name="search-target"]:checked').value;
-  const scopeEl  = document.querySelector('input[name="search-scope"]:checked');
-  const scope    = scopeEl ? scopeEl.value : 'filtered';
+  const yearRaw  = (document.getElementById('search-year').value || '').trim();
+  const qnoRaw   = (document.getElementById('search-qno').value || '').trim();
   const statusEl = document.getElementById('search-status');
   const resultsWrap = document.getElementById('search-results');
 
-  // ① 未入力チェック
-  if (!raw) {
+  // 全欄空欄は不可
+  if (!raw && !yearRaw && !qnoRaw) {
     statusEl.style.color = '#e09b2d';
-    statusEl.textContent = '⚠️ 検索ワードを入力してください';
+    statusEl.textContent = '⚠️ キーワード・年度・問題番号のいずれかを入力してください';
     resultsWrap.style.display = 'none';
     return;
   }
 
-  // スペース（全角・半角）で分割してAND条件化、空文字除去・正規化
-  const keywords = raw.split(/[\s　]+/).filter(k => k.length > 0).map(k => normalizeText(k));
-
-  // 検索対象プールを scope に応じて決定
-  let allQ;
-  if (scope === 'all') {
-    // 全問題から検索（本試験専用問題は除く・年度除外・出題除外は無視）
-    allQ = state.questions.filter(q => !isExamOnlyQuestion(q));
-  } else {
-    // 出題される問題のみ（除外設定に基づいた範囲）
-    allQ = filterByExamType(state.questions);
+  // 年度・問題番号は数字のみ（全角数字は半角に変換してから判定）
+  const yearHalf = yearRaw.replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+  const qnoHalf  = qnoRaw.replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+  if ((yearHalf && !/^[0-9]+$/.test(yearHalf)) || (qnoHalf && !/^[0-9]+$/.test(qnoHalf))) {
+    statusEl.style.color = '#e09b2d';
+    statusEl.textContent = '⚠️ 年度・問題番号は数字のみ入力してください';
+    resultsWrap.style.display = 'none';
+    return;
   }
+  const yearNum = yearHalf ? parseInt(yearHalf, 10) : null;
+  const qnoNum  = qnoHalf  ? parseInt(qnoHalf, 10)  : null;
 
-  // ② 全キーワードがすべてヒットする問題を抽出（AND検索・正規化済みテキストで比較）
+  // スペース（全角・半角）で分割してAND条件化、空文字除去・正規化
+  const keywords = raw ? raw.split(/[\s　]+/).filter(k => k.length > 0).map(k => normalizeText(k)) : [];
+
+  // 検索範囲は本試験専用問題を除く全問題に固定（出題除外・除外年度の問題は含め、結果にマークを表示）
+  const allQ = state.questions.filter(q => !isExamOnlyQuestion(q));
+
+  // 全条件に合致する問題を抽出（キーワードは問題文＋選択肢を対象にAND検索）
   const matched = allQ.filter(q => {
-    if (target === 'question') {
-      const text = normalizeText(q.questionText);
-      return keywords.every(kw => text.includes(kw));
-    } else {
-      const allChoices = normalizeText((q.choices || []).join(' '));
-      return keywords.every(kw => allChoices.includes(kw));
+    if (yearNum !== null) {
+      const y = Number(q.year);
+      if (isNaN(y) || y !== yearNum) return false;
     }
+    if (qnoNum !== null) {
+      // 「15改」のような接尾辞付きの問題番号は先頭の数字部分で照合する
+      const m = normalizeText(String(q.questionNo == null ? '' : q.questionNo)).trim().match(/^(\d+)/);
+      if (!m || parseInt(m[1], 10) !== qnoNum) return false;
+    }
+    if (keywords.length > 0) {
+      const text = normalizeText((q.questionText || '') + ' ' + (q.choices || []).join(' '));
+      if (!keywords.every(kw => text.includes(kw))) return false;
+    }
+    return true;
   });
 
-  // ④ 0件
+  // 0件
   if (matched.length === 0) {
     statusEl.style.color = '#7a8a99';
     statusEl.textContent = '該当する問題が見つかりませんでした。';
@@ -3247,14 +3251,19 @@ function execSearch() {
     return;
   }
 
-  // ⑤ 結果表示
-  const kwLabel = keywords.length > 1 ? keywords.map(k => `「${k}」`).join(' AND ') : `「${keywords[0]}」`;
-  const scopeLabel = scope === 'all' ? '全問題' : '出題される問題';
+  // 結果表示
+  const condParts = [];
+  if (keywords.length > 0) condParts.push(keywords.length > 1 ? keywords.map(k => `「${k}」`).join(' AND ') : `「${keywords[0]}」`);
+  if (yearNum !== null) condParts.push(`第${yearNum}回`);
+  if (qnoNum !== null)  condParts.push(`問${qnoNum}`);
+  const excludedCount = matched.filter(q => getSearchExclusionTags(q).length > 0).length;
   statusEl.style.color = '#2c5f7c';
-  statusEl.textContent = `${matched.length}件 ヒット（${kwLabel}）`;
+  statusEl.textContent = `${matched.length}件 ヒット（${condParts.join(' / ')}）`;
 
   document.getElementById('search-result-label').textContent =
-    `検索結果: ${matched.length}件（${scopeLabel}対象 / タップで問題を確認）`;
+    `検索結果: ${matched.length}件（全問題対象` +
+    (excludedCount > 0 ? ` / うち除外マーク付き ${excludedCount}件` : '') +
+    ` / タップで問題を確認）`;
 
   const listEl = document.getElementById('search-result-list');
   listEl.innerHTML = '';
@@ -3306,14 +3315,18 @@ function execSearch() {
 
     // 選択肢プレビュー（いずれかのキーワードがヒットした選択肢を表示）
     let choicesHtml = '';
-    if (target === 'choices') {
+    if (keywords.length > 0) {
       const hitChoices = (q.choices || [])
         .map((c, i) => ({ c, i }))
-        .filter(({ c }) => keywords.some(kw => (c || '').toLowerCase().includes(kw)));
-      choicesHtml = `<div class="choices-preview">`
-        + hitChoices.map(({ c, i }) => `<div>${i + 1}. ${highlight(c)}</div>`).join('')
-        + `</div>`;
+        .filter(({ c }) => keywords.some(kw => normalizeText(c || '').includes(kw)));
+      if (hitChoices.length > 0) {
+        choicesHtml = `<div class="choices-preview">`
+          + hitChoices.map(({ c, i }) => `<div>${i + 1}. ${highlight(c)}</div>`).join('')
+          + `</div>`;
+      }
     }
+    const exTags = getSearchExclusionTags(q);
+    if (exTags.length > 0) card.classList.add('excluded');
 
     card.innerHTML = `
       <div class="meta">
@@ -3322,9 +3335,9 @@ function execSearch() {
         <span class="badge subject">${escapeHtml(q.subject)}</span>
         <span style="font-size: 12px; color: #7a8a99; margin-left: auto;">問${escapeHtml(String(q.questionNo))}</span>
       </div>
-      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:${(state.memos[q.id] && state.memos[q.id].trim()) || (state.mutedQuestions && state.mutedQuestions[q.id]) ? '6px' : '0'};">
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:${((state.memos[q.id] && state.memos[q.id].trim()) || exTags.length > 0) ? '6px' : '0'};">
         ${(state.memos[q.id] && state.memos[q.id].trim()) ? '<span style="font-size:11px;background:#2c5f7c;color:white;padding:2px 8px;border-radius:10px;">📝 メモあり</span>' : ''}
-        ${(state.mutedQuestions && state.mutedQuestions[q.id]) ? '<span style="font-size:11px;background:#ffc107;color:#212529;padding:2px 8px;border-radius:10px;font-weight:600;">🚫 出題除外</span>' : ''}
+        ${exTags.map(t => `<span class="search-ex-tag">${escapeHtml(t)}</span>`).join('')}
       </div>
       <div class="q-text">${highlight(q.questionText)}</div>
       ${choicesHtml}
@@ -4131,7 +4144,7 @@ function showQuestion() {
 function backToList() {
   const mode = state.currentMode;
   if (mode === 'search') {
-    showScreen('search', '問題検索', '問題文・選択肢から検索');
+    showScreen('search', '問題検索', 'キーワード・年度・問題番号から検索');
   } else if (mode === 'memo_review') {
     goMemoList();
   } else if (mode === 'muted_review') {
