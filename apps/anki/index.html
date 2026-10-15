@@ -532,6 +532,130 @@
   .kotsu-row .k-len.revealed .ka{visibility:visible}
   .kotsu-note{font-size:calc(10.5px*var(--fs));color:var(--gold);line-height:1.6;margin:6px 2px 0}
 </style>
+<style id="q4-style">
+/* ===== 4択クイズ（追加） ===== */
+.q4-wrap{max-width:720px;margin:0 auto}
+.q4-tools{display:flex;gap:8px;justify-content:flex-end;margin-bottom:10px}
+.q4-catgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+@media(max-width:340px){.q4-catgrid{grid-template-columns:1fr}}
+.q4-cat{position:relative;text-align:left;border:1.5px solid var(--line);background:var(--paper2);border-radius:12px;
+  padding:10px 10px 10px 36px;cursor:pointer;font-family:inherit;color:var(--ink);min-height:calc(78px*var(--fs));transition:background .15s,border-color .15s}
+.q4-cat::before{content:'';position:absolute;left:10px;top:12px;width:17px;height:17px;border:1.5px solid var(--gold);border-radius:4px;background:#fff}
+.q4-cat.on{border-color:var(--indigo);background:#fff;box-shadow:2px 3px 0 var(--shadow)}
+.q4-cat.on::before{content:'✓';background:var(--indigo);border-color:var(--indigo);color:var(--paper);font-size:12px;line-height:15px;text-align:center;font-weight:700}
+.q4-cat b{display:block;font-family:'Shippori Mincho',serif;font-weight:800;font-size:calc(14.5px*var(--fs));color:var(--indigo);line-height:1.3}
+.q4-cat small{display:block;font-size:calc(10px*var(--fs));color:#7a6c58;margin-top:3px;line-height:1.4}
+.q4-cat .st{display:block;font-size:calc(10px*var(--fs));color:var(--gold);margin-top:4px;font-weight:700}
+.q4-nrow{display:flex;align-items:center;gap:8px;margin-bottom:14px;font-size:calc(13px*var(--fs));font-weight:700;color:var(--indigo)}
+.q4-nrow button{flex:1;border:1px solid var(--line);background:var(--paper2);border-radius:9px;padding:9px 6px;font-family:inherit;font-weight:700;font-size:calc(13px*var(--fs));color:var(--indigo);cursor:pointer}
+.q4-nrow button.on{background:var(--indigo);color:var(--paper);border-color:var(--indigo)}
+.q4-start{display:block;width:100%;border:none;background:var(--cinnabar);color:var(--paper);border-radius:12px;padding:14px;font-family:'Shippori Mincho',serif;font-weight:800;font-size:calc(17px*var(--fs));letter-spacing:.15em;box-shadow:3px 4px 0 var(--shadow);cursor:pointer}
+.q4-start:active{transform:translate(1px,2px);box-shadow:1px 1px 0 var(--shadow)}
+.q4-start:disabled{opacity:.45;box-shadow:none;letter-spacing:.05em}
+.q4-note{font-size:calc(10.5px*var(--fs));color:#7a6c58;text-align:center;margin-top:12px}
+.q4-link{border:none;background:none;color:var(--cinnabar);text-decoration:underline;font-size:inherit;font-family:inherit;cursor:pointer;padding:0 2px}
+.q4-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.q4-prog{font-family:'Shippori Mincho',serif;font-weight:800;color:var(--indigo);font-size:calc(15px*var(--fs))}
+.q4-tag{font-size:calc(10.5px*var(--fs));font-weight:700;background:var(--indigo);color:var(--paper);border-radius:20px;padding:3px 10px}
+.q4-tag.retry{background:var(--gold)}
+.q4-quit{margin-left:auto;border:1px solid var(--line);background:var(--paper2);color:#6b5d4f;border-radius:8px;padding:5px 11px;font-size:calc(11px*var(--fs));font-family:inherit;cursor:pointer}
+.q4-bar{height:5px;background:var(--line);border-radius:3px;overflow:hidden;margin-bottom:14px}
+.q4-bar i{display:block;height:100%;background:var(--cinnabar);transition:width .3s}
+.q4-q{background:#fff;border:1px solid var(--line);border-left:5px solid var(--cinnabar);border-radius:10px;padding:14px;margin-bottom:14px;
+  font-family:'Shippori Mincho',serif;font-weight:700;font-size:calc(16px*var(--fs));line-height:1.65;white-space:pre-line;color:var(--ink)}
+.q4-opts{display:flex;flex-direction:column;gap:9px}
+.q4-opt{display:flex;align-items:flex-start;gap:11px;width:100%;text-align:left;border:1.5px solid var(--line);background:#fff;border-radius:12px;
+  padding:11px 12px;font-family:inherit;font-size:calc(15px*var(--fs));line-height:1.55;color:var(--ink);cursor:pointer;box-shadow:2px 3px 0 var(--shadow)}
+.q4-opt:active:not(:disabled){transform:translate(1px,2px);box-shadow:1px 1px 0 var(--shadow)}
+.q4-opt .no{flex:0 0 auto;width:calc(26px*var(--fs));height:calc(26px*var(--fs));border-radius:50%;background:var(--indigo);color:var(--paper);
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:calc(13px*var(--fs))}
+.q4-opt .tx{flex:1;min-width:0;white-space:pre-line;word-break:break-word;padding-top:calc(2px*var(--fs))}
+.q4-opt:disabled{cursor:default}
+.q4-opt.ok{background:var(--jade);border-color:#46665a;color:#fff}
+.q4-opt.ok .no{background:#fff;color:var(--jade)}
+.q4-opt.ng{background:#f7dedb;border-color:var(--cinnabar);color:var(--cinnabar-d)}
+.q4-opt.ng .no{background:var(--cinnabar)}
+.q4-opt.dim{opacity:.5}
+.q4-fb{margin-top:14px}
+.q4-verdict{font-family:'Shippori Mincho',serif;font-weight:800;font-size:calc(17px*var(--fs));margin-bottom:8px}
+.q4-verdict.ok{color:var(--jade)}
+.q4-verdict.ng{color:var(--cinnabar)}
+.q4-exp{background:var(--paper2);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-size:calc(12.5px*var(--fs));line-height:1.75;white-space:pre-line;color:#3d352b;margin-bottom:12px}
+.q4-next{display:block;width:100%;border:1px solid var(--indigo);background:var(--indigo);color:var(--paper);border-radius:12px;padding:13px;
+  font-family:'Shippori Mincho',serif;font-weight:800;font-size:calc(15px*var(--fs));cursor:pointer;margin-top:4px}
+.q4-next.alt{background:var(--paper2);color:var(--indigo)}
+.q4-next:active{transform:translate(1px,2px)}
+.q4-score{text-align:center;background:var(--indigo);color:var(--paper);border-radius:14px;padding:16px 12px;margin-bottom:14px}
+.q4-score b{display:block;font-family:'Shippori Mincho',serif;font-size:calc(40px*var(--fs));font-weight:800;line-height:1.25}
+.q4-score span{font-size:calc(12.5px*var(--fs));opacity:.9}
+.q4-brkbox{margin-bottom:14px}
+.q4-brk{display:flex;align-items:center;gap:8px;font-size:calc(12px*var(--fs));margin-bottom:6px}
+.q4-brk .nm{flex:0 0 5.5em;font-weight:700;color:var(--indigo)}
+.q4-brk .bar{flex:1;height:8px;background:var(--line);border-radius:4px;overflow:hidden}
+.q4-brk .bar i{display:block;height:100%;background:var(--jade)}
+.q4-brk .pc{flex:0 0 3.2em;text-align:right;color:#6b5d4f}
+.q4-sec{font-family:'Shippori Mincho',serif;font-weight:800;color:var(--indigo);font-size:calc(14px*var(--fs));margin:6px 0 8px}
+.q4-wr{background:#fff;border:1px solid var(--line);border-radius:10px;margin-bottom:7px;overflow:hidden}
+.q4-wr summary{padding:10px 12px;font-size:calc(12.5px*var(--fs));font-weight:700;line-height:1.5;cursor:pointer;color:var(--ink)}
+.q4-wr-b{padding:0 12px 10px;font-size:calc(12.5px*var(--fs));line-height:1.7}
+.q4-wr-b b.ok{color:var(--jade)}
+.q4-wr-b b.ng{color:var(--cinnabar)}
+.q4-wr-b .q4-exp{margin:8px 0 0}
+.q4-btns{margin-top:14px;display:flex;flex-direction:column;gap:8px}
+.q4-multi{margin:-6px 0 12px;padding:7px 10px;border-radius:8px;background:#f6ecd2;border:1px solid var(--gold);color:#6b5328;font-size:calc(11.5px*var(--fs));line-height:1.55;font-weight:700}
+/* ===== 線結び問題 ===== */
+.m-hint{font-size:calc(11px*var(--fs));color:#7a6c58;margin:-4px 0 12px;line-height:1.55}
+.m-note{display:block;font-family:'Zen Kaku Gothic New',sans-serif;font-weight:500;font-size:calc(11px*var(--fs));color:#7a6c58;margin-top:6px;line-height:1.5}
+.m-board{position:relative;display:grid;grid-template-columns:1fr 56px 1fr;margin-bottom:14px}
+.m-col{display:flex;flex-direction:column;gap:12px;position:relative;z-index:2}
+.m-svg{position:absolute;left:0;top:0;width:100%;height:100%;z-index:1;pointer-events:none;overflow:visible}
+.m-item{position:relative;width:100%;min-height:calc(48px*var(--fs));display:flex;align-items:center;justify-content:center;text-align:center;
+  border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:9px 10px;font-family:inherit;font-size:calc(13.5px*var(--fs));line-height:1.45;
+  color:var(--ink);cursor:pointer;touch-action:pan-y;-webkit-user-select:none;user-select:none;word-break:break-word;box-shadow:2px 3px 0 var(--shadow)}
+.m-item[data-side="L"]::after,.m-item[data-side="R"]::before{content:'';position:absolute;top:50%;width:11px;height:11px;margin-top:-5.5px;border-radius:50%;background:var(--indigo);border:2px solid var(--paper)}
+.m-item[data-side="L"]::after{right:-8px}
+.m-item[data-side="R"]::before{left:-8px}
+.m-item.sel{border-color:var(--cinnabar);box-shadow:0 0 0 3px rgba(178,62,50,.28)}
+.m-item.sel::after,.m-item.sel::before{background:var(--cinnabar)}
+.m-item.linked{border-color:var(--indigo);background:#eef2f1}
+.m-item.ok{background:var(--jade);border-color:#46665a;color:#fff}
+.m-item.ng{background:#f7dedb;border-color:var(--cinnabar);color:var(--cinnabar-d)}
+.m-line{stroke:var(--indigo);stroke-width:3.5;stroke-linecap:round;fill:none}
+.m-line.tmp{stroke:var(--cinnabar);stroke-dasharray:1 7}
+.m-line.ok{stroke:var(--jade)}
+.m-line.ng{stroke:var(--cinnabar)}
+.m-line.fix{stroke:var(--jade);stroke-dasharray:8 6;opacity:.85}
+.m-actions{display:flex;gap:8px}
+.m-actions .q4-next{flex:1;margin-top:0}
+.m-actions .q4-next:disabled{opacity:.4}
+.m-legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:calc(11px*var(--fs));margin-bottom:8px;font-weight:700}
+.m-legend .ok{color:var(--jade)}.m-legend .ng{color:var(--cinnabar)}.m-legend .fix{color:var(--jade)}
+/* ===== 分野選択ツリー（大分野→中分野→小分野） ===== */
+.q4-tree{display:flex;flex-direction:column;gap:9px;margin-bottom:14px}
+.q4-grp{border:1.5px solid var(--line);background:var(--paper2);border-radius:12px;overflow:hidden}
+.q4-grp.st-on,.q4-grp.st-part{border-color:var(--indigo);background:#fff;box-shadow:2px 3px 0 var(--shadow)}
+.q4-gh{display:flex;align-items:stretch}
+.q4-gck{flex:0 0 auto;width:calc(46px*var(--fs));min-width:46px;border:none;background:none;cursor:pointer;position:relative}
+.q4-gck::before{content:'';position:absolute;left:12px;top:50%;width:20px;height:20px;margin-top:-10px;border:1.5px solid var(--gold);border-radius:5px;background:#fff;box-sizing:border-box}
+.q4-grp.st-on .q4-gck::before{content:'✓';background:var(--indigo);border-color:var(--indigo);color:var(--paper);font-size:13px;line-height:17px;text-align:center;font-weight:700}
+.q4-grp.st-part .q4-gck::before{content:'';background:linear-gradient(var(--indigo),var(--indigo)) center/10px 3px no-repeat,#fff;border-color:var(--indigo)}
+.q4-gtx{flex:1;min-width:0;text-align:left;border:none;background:none;padding:10px 4px 10px 0;cursor:pointer;font-family:inherit;color:var(--ink)}
+.q4-gtx b{display:block;font-family:'Shippori Mincho',serif;font-weight:800;font-size:calc(14.5px*var(--fs));color:var(--indigo);line-height:1.3}
+.q4-gtx small{display:block;font-size:calc(10px*var(--fs));color:#7a6c58;margin-top:2px;line-height:1.4}
+.q4-gtx .st{display:block;font-size:calc(10px*var(--fs));color:var(--gold);margin-top:3px;font-weight:700}
+.q4-gex{flex:0 0 auto;border:none;border-left:1px solid var(--line);background:rgba(0,0,0,.025);padding:0 11px;font-family:inherit;font-size:calc(11px*var(--fs));font-weight:700;color:var(--indigo);cursor:pointer;white-space:nowrap}
+.q4-gp{border-top:1px dashed var(--line);padding:10px 10px 12px;background:#fbf8f0}
+.q4-chips{display:flex;flex-wrap:wrap;gap:7px}
+.q4-chip{border:1.5px solid var(--line);background:#fff;border-radius:20px;padding:6px 12px;font-family:inherit;font-size:calc(12px*var(--fs));color:#6b5d4f;cursor:pointer;line-height:1.35}
+.q4-chip i{font-style:normal;font-size:.85em;opacity:.8;margin-left:5px}
+.q4-chip.on{background:var(--indigo);border-color:var(--indigo);color:var(--paper);font-weight:700}
+.q4-chip.part{border-color:var(--indigo);color:var(--indigo);font-weight:700;background:#eef2f1}
+.q4-chip.sm{padding:4px 9px;font-size:calc(11px*var(--fs))}
+.q4-minors{margin-top:11px;padding-top:9px;border-top:1px dotted var(--line)}
+.q4-mhead{display:flex;align-items:center;gap:6px;margin-bottom:7px;font-size:calc(11px*var(--fs));font-weight:700;color:var(--indigo)}
+.q4-mhead span{flex:1}
+.q4-mhead button{border:1px solid var(--line);background:var(--paper2);border-radius:7px;padding:3px 9px;font-family:inherit;font-size:calc(10.5px*var(--fs));color:#6b5d4f;cursor:pointer}
+</style>
 </head>
 <body>
 <header>
@@ -556,6 +680,8 @@
       <button class="home-card" data-go="viewMyaku"><span class="hc-icon">脈</span><span class="hc-title">六部定位脈診・難経六十九難</span><span class="hc-sub">補母瀉子の本治法・経穴選定</span></button>
       <button class="home-card" data-go="viewNerve"><span class="hc-icon">脳</span><span class="hc-title">脳神経</span><span class="hc-sub">12対の脳神経とその働き</span></button>
       <button class="home-card" data-go="viewRyakugo"><span class="hc-icon">略</span><span class="hc-title">欧文略語</span><span class="hc-sub">国家試験出題基準の欧文略語集（全100語・2026年出題基準準拠）</span></button>
+      <button class="home-card" data-go="viewQuiz4"><span class="hc-icon">問</span><span class="hc-title">4択クイズ</span><span class="hc-sub">要穴・筋肉・高さ別・脳神経・五行色体表などから自動出題</span></button>
+      <button class="home-card" data-go="viewMatch"><span class="hc-icon">結</span><span class="hc-title">線結び問題</span><span class="hc-sub">要穴・筋肉・脳神経・骨度法などの左右を線で結ぶ</span></button>
     </div>
   </section>
 
@@ -594,6 +720,18 @@
       <button class="ryaku-allbtn" id="ryakuAll">すべて開く</button>
     </div>
     <div id="ryakuArea"></div>
+    <button class="back-btn" data-back>← ホームへ戻る</button>
+  </section>
+
+  <!-- ===== 4択クイズ（自動出題） ===== -->
+  <section class="view" id="viewQuiz4">
+    <div class="q4-wrap" id="q4Body"></div>
+    <button class="back-btn" data-back>← ホームへ戻る</button>
+  </section>
+
+  <!-- ===== 線結び問題 ===== -->
+  <section class="view" id="viewMatch">
+    <div class="q4-wrap" id="mBody"></div>
     <button class="back-btn" data-back>← ホームへ戻る</button>
   </section>
 
@@ -4058,6 +4196,1817 @@ if(updBtn) updBtn.onclick=forceUpdate;
   _autoCheck(); // 起動時
   document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) _autoCheck(); }); // 復帰時
   setInterval(()=>{ if(!document.hidden) _autoCheck(); }, 30 * 60 * 1000); // 30分ごと
+})();
+</script>
+<script>
+/* ===== 4択クイズ：出題エンジン＋画面（4択クイズ・線結び問題（追加分。既存コードは変更していません） ===== */
+/* ===================== 4択クイズ：出題エンジン =====================
+   既存データ（meridians / goyu / goyo / muscleCats / level* / nerveData / gogyoTables 等）から
+   問題を自動生成する。各問題は valid 述語で「正解が一意」であることを検証し、
+   正解にもなりうる紛らわしい選択肢は自動的に除外する。 */
+function Q4_makeEngine(D){
+  'use strict';
+  var rnd=function(n){return Math.floor(Math.random()*n);};
+  var pick=function(a){return a[rnd(a.length)];};
+  var shuffle=function(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=rnd(i+1);var t=a[i];a[i]=a[j];a[j]=t;}return a;};
+  var uniq=function(a){return Array.from(new Set(a));};
+  var flat=function(a){return [].concat.apply([],a);};
+  var nl=function(s){return String(s==null?'':s).replace(/\n/g,'');};
+  var first=function(s){return String(s==null?'':s).split('\n')[0].trim();};
+  var around=function(arr,i,w){return arr.slice(Math.max(0,i-w),Math.min(arr.length,i+w+1));};
+
+  /* ---------- 文字列の類似度（似通った選択肢を作るため） ---------- */
+  var CH=/[\s　、。・（）()「」『』／\/:：\-－〜~,，.]/g;
+  function charSet(x){var o={};String(x).replace(CH,'').split('').forEach(function(c){o[c]=1;});return o;}
+  function bigr(x){x=String(x).replace(CH,'');var o={};for(var i=0;i<x.length-1;i++)o[x.substr(i,2)]=1;return o;}
+  function jac(a,b){var i=0,u=0,k;for(k in a){u++;if(b[k])i++;}for(k in b){if(!a[k])u++;}return u?i/u:0;}
+  function sim(a,b){
+    a=String(a);b=String(b);
+    var s0;
+    if(/^[A-Za-z0-9\s,\-\/()'’]+$/.test(a)&&/[A-Za-z]{3}/.test(a)){
+      var oa={},ob={};
+      a.toLowerCase().split(/[\s,\-\/()]+/).forEach(function(t){oa[t]=1;});
+      b.toLowerCase().split(/[\s,\-\/()]+/).forEach(function(t){ob[t]=1;});
+      s0=0.7*jac(oa,ob)+0.2*(a.charAt(0).toLowerCase()===b.charAt(0).toLowerCase()?1:0);
+    }else{
+      s0=0.45*jac(charSet(a),charSet(b))+0.35*jac(bigr(a),bigr(b));
+      if(a.charAt(a.length-1)===b.charAt(b.length-1)) s0+=0.12;
+      if(a.charAt(0)===b.charAt(0)) s0+=0.08;
+    }
+    return s0+0.15*(Math.min(a.length,b.length)/Math.max(a.length,b.length,1));
+  }
+  function weightedPick(items,w,k){
+    var out=[],it=items.slice(),ws=w.slice();
+    for(var n=0;n<k&&it.length;n++){
+      var tot=0;ws.forEach(function(x){tot+=x;});
+      var r=Math.random()*tot,acc=0,idx=0;
+      for(;idx<ws.length;idx++){acc+=ws[idx];if(r<=acc)break;}
+      if(idx>=it.length)idx=it.length-1;
+      out.push(it[idx]);it.splice(idx,1);ws.splice(idx,1);
+    }
+    return out;
+  }
+  // 絞り込み（中分野・小分野）。出題のたびに genOne/matchOne が設定する
+  var F={muscle:null,level:null,gogyo:null,kotsudo:null,point:null};
+
+  /* ans=正解、hard=構造的に近い誤答候補、easy=補充、valid=「正解として成立するか」の述語、
+     ord=選択肢の並び順（数値化関数。指定時は“近い順位”の誤答を選ぶ）。
+     誤答は、正解との類似度が高いものを優先して選ぶ（上位から重み付き抽選） */
+  function mk(o){
+    var ans=String(o.ans),valid=o.valid||function(x){return x===ans;};
+    if(!valid(ans)) return null;
+    var hardSet=new Set((o.hard||[]).map(String)),seen=new Set([ans]),cand=[];
+    (o.hard||[]).concat(o.easy||[]).forEach(function(v){
+      if(v==null||v==='') return;
+      var x=String(v);
+      if(seen.has(x)) return;
+      seen.add(x);
+      if(valid(x)) return;
+      if(o.skip&&o.skip(x)) return;
+      cand.push(x);
+    });
+    if(cand.length<3) return null;
+    var scored;
+    if(o.ord){
+      var oa=o.ord(ans);
+      scored=cand.map(function(x){return {x:x,d:Math.abs(o.ord(x)-oa)};}).sort(function(p,q){return p.d-q.d;})
+        .map(function(t,i,arr){return {x:t.x,s:1-i/arr.length+(hardSet.has(t.x)?0.35:0)};});
+    }else{
+      scored=cand.map(function(x){return {x:x,s:sim(ans,x)+(hardSet.has(x)?0.35:0)};});
+    }
+    scored.sort(function(p,q){return q.s-p.s;});
+    var top=scored.slice(0,8);
+    var ds=weightedPick(top.map(function(t){return t.x;}),top.map(function(t){return Math.pow(t.s+0.05,3);}),3);
+    var opts=[ans].concat(ds);
+    opts=o.ord?opts.sort(function(a2,b2){return o.ord(a2)-o.ord(b2);}):shuffle(opts);
+    return {cat:o.cat,q:o.q,opts:opts,ai:opts.indexOf(ans),exp:o.exp||'',key:o.key||o.q,ordered:!!o.ord,valid:valid,multi:!!o.multi};
+  }
+
+  var PTS=flat(D.meridians.map(function(m){return m.points.map(function(p,i){return {p:p,m:m,i:i};});}));
+
+  /* ======================= 要穴 ======================= */
+  function buildYoketsu(){
+    var goyu=D.goyu,goyo=D.goyo,G=[],CAT='yoketsu';
+    var sides=['yin','yang'],sideName={yin:'陰経',yang:'陽経'};
+    var gyoOf=function(s,ci){return (s==='yin'?goyu.yinGyo:goyu.yangGyo)[ci];};
+    var typeLabel=function(s,ci){return goyu.cols[ci]+gyoOf(s,ci)+'穴';};
+    var gyAll=[],yoAll=[];
+    sides.forEach(function(s){goyu[s].forEach(function(r,ri){r.cells.forEach(function(c,ci){gyAll.push({s:s,ri:ri,ci:ci,c:c,org:r.org});});});});
+    sides.forEach(function(s){goyo[s].forEach(function(r,ri){r.cells.forEach(function(c,ci){yoAll.push({s:s,ri:ri,ci:ci,c:c,org:r.org});});});});
+    var gyNames=gyAll.map(function(x){return x.c.name;});
+    var yoNames=yoAll.map(function(x){return x.c.name;}).concat((goyo.extraRaku||[]).map(function(e){return e.cell.name;}),(goyo.extraGeki||[]).map(function(e){return e.cell.name;}));
+    var fmt=function(c){return c.name+'（'+c.yomi+'／'+c.code+'）';};
+
+    // 五行穴「肝経の滎穴（五行穴）はどれか」
+    G.push(function(){
+      var x=pick(gyAll),r=goyu[x.s][x.ri];
+      return mk({cat:CAT,q:r.org+'の'+goyu.cols[x.ci]+'穴（五行穴）はどれか。',ans:x.c.name,
+        hard:r.cells.map(function(c){return c.name;}).concat(goyu[x.s].map(function(rr){return rr.cells[x.ci].name;})),easy:gyNames.concat(yoNames),
+        exp:r.org+'の'+typeLabel(x.s,x.ci)+'＝'+fmt(x.c)+'\n'+r.org+'の五行穴：'+r.cells.map(function(c,i){return goyu.cols[i]+'＝'+c.name;}).join('・'),
+        key:'gy1:'+x.s+x.ri+x.ci});
+    });
+    // 「陰経の経金穴はどれか」
+    G.push(function(){
+      var s=pick(sides),ci=rnd(5),cells=goyu[s].map(function(r){return r.cells[ci];});
+      var set=new Set(cells.map(function(c){return c.name;}));
+      var c=pick(cells),sameSide=[];
+      goyu[s].forEach(function(r){r.cells.forEach(function(cc,cj){if(cj!==ci)sameSide.push(cc.name);});});
+      return mk({cat:CAT,q:sideName[s]+'の'+typeLabel(s,ci)+'（五行穴）はどれか。',ans:c.name,
+        valid:function(n){return set.has(n);},multi:true,hard:sameSide,easy:gyNames.concat(yoNames),
+        exp:sideName[s]+'の'+goyu.cols[ci]+'穴は'+typeLabel(s,ci)+'。\n該当：'+cells.map(function(x){return x.name;}).join('・'),
+        key:'gy2:'+s+ci});
+    });
+    // 「行間は五行穴のうちどれか」
+    G.push(function(){
+      var x=pick(gyAll),r=goyu[x.s][x.ri];
+      var labels=[0,1,2,3,4].map(function(j){return typeLabel(x.s,j);});
+      return mk({cat:CAT,q:'「'+x.c.name+'」は五行穴のうちどれか。',ans:typeLabel(x.s,x.ci),hard:labels,
+        ord:function(t){return labels.indexOf(t);},
+        exp:fmt(x.c)+'は'+r.org+'の'+typeLabel(x.s,x.ci)+'。',key:'gy3:'+x.s+x.ri+x.ci});
+    });
+    // 五要穴「肝の郄穴はどれか」
+    G.push(function(){
+      var x=pick(yoAll),r=goyo[x.s][x.ri];
+      var colName=x.ci===4?'兪穴（背部兪穴）':goyo.cols[x.ci];
+      return mk({cat:CAT,q:r.org+'の'+colName+'はどれか。',ans:x.c.name,
+        hard:goyo[x.s].map(function(rr){return rr.cells[x.ci].name;}).concat(r.cells.map(function(c){return c.name;})),easy:yoNames.concat(gyNames),
+        exp:r.org+'の'+goyo.cols[x.ci]+'＝'+fmt(x.c)+(x.c.ji?'（'+x.c.ji+'上）':'')+'\n'+r.org+'：'+r.cells.map(function(c,i){return goyo.cols[i]+'＝'+c.name;}).join('・'),
+        key:'yo1:'+x.s+x.ri+x.ci});
+    });
+    // 「蠡溝は五要穴のうちどれか」
+    G.push(function(){
+      var x=pick(yoAll),r=goyo[x.s][x.ri];
+      var cnt=yoAll.filter(function(y){return y.c.name===x.c.name;}).length;
+      if(cnt!==1) return null;
+      return mk({cat:CAT,q:'「'+x.c.name+'」は五要穴のうちどれか。',ans:goyo.cols[x.ci],hard:goyo.cols,
+        ord:function(t){return goyo.cols.indexOf(t);},
+        exp:fmt(x.c)+'は'+r.org+'の'+goyo.cols[x.ci]+(x.c.ji?'（'+x.c.ji+'上）':'')+'。',key:'yo2:'+x.s+x.ri+x.ci});
+    });
+    // 督脈・任脈・脾の大絡の絡穴／奇経の郄穴
+    G.push(function(){
+      var e=pick(goyo.extraRaku||[]);if(!e) return null;
+      var allRaku=yoAll.filter(function(y){return y.ci===2;}).map(function(y){return y.c.name;}).concat(goyo.extraRaku.map(function(x){return x.cell.name;}));
+      return mk({cat:CAT,q:e.org+'の絡穴はどれか。',ans:e.cell.name,
+        hard:goyo.extraRaku.map(function(x){return x.cell.name;}).concat(allRaku),easy:yoNames,
+        exp:e.org+'の絡穴＝'+fmt(e.cell),key:'yo3:'+e.org});
+    });
+    G.push(function(){
+      var e=pick(goyo.extraGeki||[]);if(!e) return null;
+      var allGeki=yoAll.filter(function(y){return y.ci===1;}).map(function(y){return y.c.name;}).concat(goyo.extraGeki.map(function(x){return x.cell.name;}));
+      return mk({cat:CAT,q:e.org+'の郄穴はどれか。',ans:e.cell.name,
+        hard:goyo.extraGeki.map(function(x){return x.cell.name;}).concat(allGeki),easy:yoNames,
+        exp:e.org+'の郄穴＝'+fmt(e.cell),key:'yo4:'+e.org});
+    });
+    // 八会穴
+    G.push(function(){
+      var row=pick(D.hakkai.rows),names=D.hakkai.rows.map(function(r){return r.cell.name;});
+      return mk({cat:CAT,q:'八会穴のうち「'+row.k+'」はどれか。',ans:row.cell.name,hard:names,easy:gyNames,
+        exp:row.k+'＝'+fmt(row.cell),key:'hk1:'+row.k});
+    });
+    G.push(function(){
+      var row=pick(D.hakkai.rows),ks=D.hakkai.rows.map(function(r){return r.k;});
+      return mk({cat:CAT,q:'「'+row.cell.name+'」は八会穴のうち何か。',ans:row.k,hard:ks,
+        ord:function(t){return ks.indexOf(t);},exp:row.cell.name+'は'+row.k+'。',key:'hk2:'+row.k});
+    });
+    // 四総穴
+    G.push(function(){
+      var row=pick(D.soshu.rows),names=D.soshu.rows.map(function(r){return r.cell.name;});
+      return mk({cat:CAT,q:'四総穴のうち「'+row.k+'」に対応する経穴はどれか。',ans:row.cell.name,hard:names,easy:gyNames.concat(yoNames),
+        exp:row.k+'＝'+fmt(row.cell),key:'ss1:'+row.k});
+    });
+    G.push(function(){
+      var row=pick(D.soshu.rows),ks=D.soshu.rows.map(function(r){return r.k;});
+      return mk({cat:CAT,q:'「'+row.cell.name+'」は四総穴のうちどの部位に対応するか。',ans:row.k,hard:ks,
+        ord:function(t){return ks.indexOf(t);},exp:row.cell.name+'＝'+row.k,key:'ss2:'+row.k});
+    });
+    // 下合穴
+    G.push(function(){
+      var row=pick(D.gego.rows),names=D.gego.rows.map(function(r){return r.cell.name;});
+      return mk({cat:CAT,q:'六腑「'+row.k+'」の下合穴はどれか。',ans:row.cell.name,
+        valid:function(n){return n===row.cell.name;},hard:names,easy:gyNames.concat(yoNames),
+        exp:row.k+'の下合穴＝'+fmt(row.cell),key:'gg1:'+row.k});
+    });
+    G.push(function(){
+      var row=pick(D.gego.rows),ks=D.gego.rows.map(function(r){return r.k;});
+      return mk({cat:CAT,q:'「'+row.cell.name+'」は、どの腑の下合穴か。',ans:row.k,hard:ks,
+        valid:function(k){return D.gego.rows.some(function(r){return r.k===k&&r.cell.name===row.cell.name;});},
+        ord:function(t){return ks.indexOf(t);},exp:row.cell.name+'は'+row.k+'の下合穴。',key:'gg2:'+row.k});
+    });
+    // 八総穴（八脈交会穴）
+    var hs=D.hasso.pairs;
+    var hsMeridians=flat(hs.map(function(p){return [p.m1,p.m2];}));
+    var hsCells=flat(hs.map(function(p){return [p.c1,p.c2];}));
+    G.push(function(){
+      var p=pick(hs),side=rnd(2),c=side?p.c2:p.c1,m=side?p.m2:p.m1;
+      return mk({cat:CAT,q:'八総穴「'+c.name+'」が通じる奇経八脈はどれか。',ans:m,hard:hsMeridians,
+        exp:c.name+'（'+c.code+'）は'+m+'に通じる。'+p.c1.name+'×'+p.c2.name+'＝'+p.m1+'・'+p.m2,key:'hs1:'+c.name});
+    });
+    G.push(function(){
+      var p=pick(hs),side=rnd(2),c=side?p.c2:p.c1,partner=side?p.c1:p.c2;
+      return mk({cat:CAT,q:'八総穴で「'+c.name+'」と組み合わせて用いる経穴はどれか。',ans:partner.name,
+        skip:function(n){return n===c.name;},
+        hard:hsCells.map(function(x){return x.name;}),easy:gyNames,
+        exp:p.c1.name+'（'+p.m1+'）×'+p.c2.name+'（'+p.m2+'）が一対。',key:'hs2:'+c.name});
+    });
+    G.push(function(){
+      var p=pick(hs),side=rnd(2),c=side?p.c2:p.c1,m=side?p.m2:p.m1;
+      return mk({cat:CAT,q:'奇経「'+m+'」に通じる八総穴はどれか。',ans:c.name,hard:hsCells.map(function(x){return x.name;}),easy:gyNames,
+        exp:m+'に通じる八総穴＝'+fmt(c),key:'hs3:'+m});
+    });
+    // 経穴データの「要穴区分」(req)：「合谷の要穴としての分類はどれか」
+    var reqPts=PTS.filter(function(x){return x.p.req&&x.p.req!=='八脈交会穴';});
+    var reqCount={};PTS.forEach(function(x){if(x.p.req)reqCount[x.p.req]=(reqCount[x.p.req]||0)+1;});
+    G.push(function(){
+      var x=pick(reqPts);if(reqCount[x.p.req]!==1) return null;
+      var sameM=x.m.points.filter(function(p){return p.req;}).map(function(p){return p.req;});
+      var allReq=PTS.filter(function(y){return y.p.req;}).map(function(y){return y.p.req;});
+      return mk({cat:CAT,q:'「'+x.p.name+'」の要穴としての分類を正しく示しているのはどれか。',ans:x.p.req,
+        valid:function(t){return t===x.p.req||(t.length>=4&&(t.indexOf(x.p.req)>=0||x.p.req.indexOf(t)>=0));},hard:sameM,easy:allReq,
+        exp:x.p.name+'（'+x.p.no+'）＝'+x.p.req,key:'rq1:'+x.p.no});
+    });
+    G.push(function(){
+      var x=pick(reqPts);if(reqCount[x.p.req]!==1) return null;
+      var bad=new Set(PTS.filter(function(y){return y.p.req&&y.p.req.indexOf(x.p.req)>=0;}).map(function(y){return y.p.name;}));
+      var sameM=x.m.points.filter(function(p){return p.req;}).map(function(p){return p.name;});
+      return mk({cat:CAT,q:'次の要穴区分に該当する経穴はどれか。\n「'+x.p.req+'」',ans:x.p.name,valid:function(n){return bad.has(n);},multi:bad.size>1,
+        hard:sameM,easy:PTS.filter(function(y){return y.p.req;}).map(function(y){return y.p.name;}),
+        exp:x.p.name+'（'+x.p.no+'）＝'+x.p.req,key:'rq2:'+x.p.no});
+    });
+    // 逆引き：穴→経「行間は、どの経の五行穴か」
+    G.push(function(){
+      var x=pick(gyAll);
+      if(gyAll.filter(function(y){return y.c.name===x.c.name;}).length!==1) return null;
+      var org=goyu[x.s][x.ri].org;
+      return mk({cat:CAT,q:'「'+x.c.name+'」は、どの経の五行穴か。',ans:org,
+        hard:goyu[x.s].map(function(r){return r.org;}),easy:gyAll.map(function(y){return y.org;}),
+        exp:fmt(x.c)+'は'+org+'の'+typeLabel(x.s,x.ci)+'。',key:'gy4:'+x.s+x.ri+x.ci});
+    });
+    // 逆引き：穴→臓腑「中都は、どの臓腑の郄穴か」
+    G.push(function(){
+      var x=pick(yoAll);
+      if(yoAll.filter(function(y){return y.c.name===x.c.name;}).length!==1) return null;
+      var org=goyo[x.s][x.ri].org;
+      return mk({cat:CAT,q:'「'+x.c.name+'」は、どの臓腑の'+(x.ci===4?'兪穴（背部兪穴）':goyo.cols[x.ci])+'か。',ans:org,
+        hard:goyo[x.s].map(function(r){return r.org;}),easy:yoAll.map(function(y){return y.org;}),
+        exp:fmt(x.c)+'は'+org+'の'+goyo.cols[x.ci]+'。',key:'yo5:'+x.s+x.ri+x.ci});
+    });
+    G.ctx={goyu:goyu,goyo:goyo,sides:sides,sideName:sideName,typeLabel:typeLabel};
+    return G;
+  }
+
+  /* ======================= 筋肉 ======================= */
+  function buildMuscle(){
+    var G=[],CAT='muscle';
+    var pr=function(s){return String(s).split('・').map(function(x){var m=x.match(/^(.+?)\((.+)\)$/);return m?{name:m[1],code:m[2]}:null;}).filter(Boolean);};
+    var MS=[];
+    D.muscleCats.forEach(function(c){c.muscles.forEach(function(m){
+      var r={};m.rows.forEach(function(x){r[x[0]]=x[1];});
+      MS.push({cat:c.cat,name:m.name,r:r,pts:pr(m.keiketu)});
+    });});
+    var cnt={};MS.forEach(function(m){cnt[m.name]=(cnt[m.name]||0)+1;});
+    MS.forEach(function(m){m.dn=cnt[m.name]>1?m.name+'（'+m.cat+'）':m.name;});
+    var sameCat=function(m){return MS.filter(function(x){return x.cat===m.cat&&x!==m;});};
+    var nerveKeys=function(t){return uniq((String(t).match(/[ぁ-んァ-ヶ一-龥]+神経/g)||[]).map(function(s){return s.replace(/^.*：/,'');}));};
+    var ptsOf=function(m){return m.pts.map(function(p){return p.name;});};
+    var allPts=uniq(flat(MS.map(ptsOf)));
+    var msPool=function(){var a2=F.muscle?MS.filter(function(x){return F.muscle.has(x.cat);}):MS;return a2.length?a2:MS;};
+    var pm=function(){return pick(msPool());};
+    var pp=function(){var a2=F.muscle?uniq(flat(msPool().map(ptsOf))):allPts;return pick(a2.length?a2:allPts);};
+    var expMuscle=function(m){return m.dn+'\n起始：'+m.r['起始']+'\n停止：'+m.r['停止']+'\n作用：'+m.r['作用']+'\n支配神経：'+m.r['支配神経']+(m.pts.length?'\n経穴：'+m.pts.map(function(p){return p.name+'('+p.code+')';}).join('・'):'');};
+
+    // 筋→経穴「三角筋に該当する経穴はどれか」
+    G.push(function(){
+      var m=pm();if(!m.pts.length) return null;
+      var own=new Set(ptsOf(m)),ans=pick(m.pts).name;
+      return mk({cat:CAT,q:'「'+m.dn+'」に該当する経穴はどれか。',ans:ans,valid:function(n){return own.has(n);},multi:own.size>1,
+        hard:flat(sameCat(m).map(ptsOf)),easy:allPts,
+        exp:m.dn+'に該当する経穴：'+m.pts.map(function(p){return p.name+'('+p.code+')';}).join('・'),key:'ms1:'+m.cat+m.name});
+    });
+    // 経穴→筋「臂臑に該当する筋はどれか」
+    G.push(function(){
+      var pn=pp(),has=MS.filter(function(m){return ptsOf(m).indexOf(pn)>=0;});
+      var ans=pick(has),dnSet=new Set(has.map(function(m){return m.dn;}));
+      return mk({cat:CAT,q:'経穴「'+pn+'」に該当する筋はどれか。',ans:ans.dn,valid:function(n){return dnSet.has(n);},multi:dnSet.size>1,
+        hard:sameCat(ans).map(function(m){return m.dn;}),easy:MS.map(function(m){return m.dn;}),
+        exp:'「'+pn+'」に該当する筋：'+has.map(function(m){return m.dn;}).join('・'),key:'ms2:'+pn});
+    });
+    // 起始・停止・作用・支配神経
+    G.push(function(){
+      var m=pm(),lab=pick(['起始','停止','作用','支配神経']),ans=m.r[lab];
+      var ak=nerveKeys(ans);
+      var valid=lab==='支配神経'?function(t){return t===ans||nerveKeys(t).some(function(k){return ak.indexOf(k)>=0;});}
+        :function(t){return t===ans||(t.length>=4&&ans.length>=4&&(t.indexOf(ans)>=0||ans.indexOf(t)>=0));};
+      return mk({cat:CAT,q:'「'+m.dn+'」の'+lab+'はどれか。',ans:ans,valid:valid,
+        hard:sameCat(m).map(function(x){return x.r[lab];}),easy:MS.map(function(x){return x.r[lab];}),
+        exp:expMuscle(m),key:'ms3:'+m.cat+m.name+lab});
+    });
+    // 神経→筋「橈骨神経支配の筋はどれか」
+    G.push(function(){
+      var m=pm(),ks=nerveKeys(m.r['支配神経']);if(!ks.length) return null;
+      var k=pick(ks);
+      var has=function(x){return nerveKeys(x.r['支配神経']).indexOf(k)>=0;};
+      var okSet=new Set(MS.filter(has).map(function(x){return x.dn;}));
+      return mk({cat:CAT,q:'「'+k+'」の支配を受ける筋はどれか。',ans:m.dn,valid:function(n){return okSet.has(n);},multi:okSet.size>1,
+        hard:sameCat(m).map(function(x){return x.dn;}),easy:MS.map(function(x){return x.dn;}),
+        exp:expMuscle(m),key:'ms4:'+k+m.cat+m.name});
+    });
+    // 起始と停止の組み合わせ
+    G.push(function(){
+      var m=pm(),A=m.r['起始'],B=m.r['停止'];
+      var pool=sameCat(m);if(pool.length<4) pool=MS.filter(function(x){return x!==m;});
+      var fmtP=function(a,b){return '起始：'+a+'\n停止：'+b;};
+      var ans=fmtP(A,B),hard=[];
+      shuffle(pool).slice(0,6).forEach(function(o){hard.push(fmtP(A,o.r['停止']));hard.push(fmtP(o.r['起始'],B));hard.push(fmtP(o.r['起始'],o.r['停止']));});
+      return mk({cat:CAT,q:'「'+m.dn+'」の起始と停止の組み合わせで正しいのはどれか。',ans:ans,hard:hard,
+        exp:expMuscle(m),key:'ms5:'+m.cat+m.name});
+    });
+    var subRel=function(u,t){return u===t||(u.length>=4&&t.length>=4&&(u.indexOf(t)>=0||t.indexOf(u)>=0));};
+    // 逆引き：起始・停止・作用→筋
+    G.push(function(){
+      var m=pm(),lab=pick(['起始','停止','作用']),t=m.r[lab];
+      var okSet=new Set(MS.filter(function(x){return subRel(x.r[lab],t);}).map(function(x){return x.dn;}));
+      return mk({cat:CAT,q:lab+'が「'+t+'」である筋はどれか。',ans:m.dn,valid:function(n){return okSet.has(n);},multi:okSet.size>1,
+        hard:sameCat(m).map(function(x){return x.dn;}),easy:MS.map(function(x){return x.dn;}),
+        exp:lab+'が「'+t+'」の筋：'+Array.from(okSet).join('・')+'\n'+expMuscle(m),key:'ms6:'+m.cat+m.name+lab});
+    });
+    // 経由：経穴→（筋）→起始・停止・作用・支配神経
+    G.push(function(){
+      var pn=pp(),has=MS.filter(function(m){return ptsOf(m).indexOf(pn)>=0;}),lab=pick(['起始','停止','作用','支配神経']);
+      var texts=uniq(has.map(function(m){return m.r[lab];})),ans=pick(texts);
+      var rel=lab==='支配神経'?function(a,b){return a===b||nerveKeys(a).some(function(k){return nerveKeys(b).indexOf(k)>=0;});}:subRel;
+      return mk({cat:CAT,q:'経穴「'+pn+'」に該当する筋の'+lab+'はどれか。',ans:ans,
+        valid:function(t){return texts.some(function(u){return rel(u,t);});},multi:texts.length>1,
+        hard:flat(has.map(sameCat)).map(function(m){return m.r[lab];}),easy:MS.map(function(m){return m.r[lab];}),
+        exp:'「'+pn+'」に該当する筋：'+has.map(function(m){return m.dn;}).join('・')+'\n'+has.map(function(m){return m.dn+'の'+lab+'：'+m.r[lab];}).join('\n'),key:'ms7:'+pn+lab});
+    });
+    // 経由：神経→（筋）→経穴
+    G.push(function(){
+      var m=pm(),ks=nerveKeys(m.r['支配神経']);if(!ks.length||!m.pts.length) return null;
+      var k=pick(ks),inn=MS.filter(function(x){return nerveKeys(x.r['支配神経']).indexOf(k)>=0;});
+      var set=new Set(flat(inn.map(ptsOf)));if(!set.size) return null;
+      var ans=pick(Array.from(set));
+      return mk({cat:CAT,q:'「'+k+'」の支配を受ける筋に該当する経穴はどれか。',ans:ans,valid:function(n){return set.has(n);},multi:set.size>1,
+        hard:flat(sameCat(m).map(ptsOf)),easy:allPts,
+        exp:k+'の支配を受ける筋：'+inn.map(function(x){return x.dn;}).join('・'),key:'ms8:'+k+ans});
+    });
+    G.ctx={MS:MS,nerveKeys:nerveKeys,ptsOf:ptsOf,pool:msPool};
+    return G;
+  }
+
+  /* ======================= 高さ別 ======================= */
+  function buildLevel(){
+    var G=[],CAT='level',MU=D.MERGE_UP;
+    var parse=function(s){
+      if(!s||s===MU) return null;
+      var f=first(s),m=f.match(/^(奇\))?\s*(.+?)\s*(?:\(([^)]*)\))?$/);
+      return m?{odd:!!m[1],name:m[2],mer:m[3]||''}:null;
+    };
+    var disp=function(p){return p.odd?p.name+'（奇穴）':p.name;};
+    var defs=[{id:'back',t:D.levelBack,pc:[1,2,3,4,5]},{id:'chest',t:D.levelChest,pc:[1,2,3,4,5,6,7,8,9]},{id:'head',t:D.levelHead,pc:[3,4,5,6,7,8]}];
+    var pd=function(){var a2=F.level?defs.filter(function(d){return F.level.has(d.id);}):defs;return pick(a2.length?a2:defs);};
+    defs.forEach(function(d){
+      d.cells=d.t.rows.map(function(r){return r.map(parse);});
+      var cnt={};
+      d.t.rows.forEach(function(r,ri){d.pc.forEach(function(ci){var p=d.cells[ri][ci];if(p)cnt[p.name]=(cnt[p.name]||0)+1;});});
+      d.t.rows.forEach(function(r,ri){d.pc.forEach(function(ci){var p=d.cells[ri][ci];if(p&&cnt[p.name]>1)p.dup=true;});});
+      d.rl=function(ri){
+        var r=d.t.rows[ri];
+        if(d.id==='back') return r[0];
+        if(d.id==='chest') return nl(r[0]);
+        return '前髪際から'+r[0].replace('前','')+'寸（後髪際から'+r[1].replace('後','')+'寸）';
+      };
+      d.cl=function(ci){
+        var raw=nl(d.t.cols[ci]);
+        if(d.id==='back') return ci===1?'後正中線上':raw;
+        if(d.id==='chest') return ci===1?'前正中線上':'前正中線の外方'+raw;
+        if(ci===3) return '正中線上';
+        if(ci===4) return '前頭切痕の線上';
+        if(ci===6) return '瞳孔線上';
+        return '正中線の外方'+raw;
+      };
+      d.qPos=function(ri,ci){
+        if(d.id==='back') return '背部：'+d.rl(ri)+'の棘突起の高さ、'+d.cl(ci)+'にある経穴はどれか。';
+        if(d.id==='chest') return '胸腹部：高さ「'+d.rl(ri)+'」、'+d.cl(ci)+'にある経穴はどれか。';
+        return '頭部：'+d.rl(ri)+'、'+d.cl(ci)+'にある経穴はどれか。';
+      };
+      d.qRow=function(ri){
+        if(d.id==='back') return '背部：'+d.rl(ri)+'の棘突起の高さにある経穴はどれか。';
+        if(d.id==='chest') return '胸腹部：高さ「'+d.rl(ri)+'」にある経穴はどれか。';
+        return '頭部：'+d.rl(ri)+'にある経穴はどれか。';
+      };
+      d.qRev=function(name){
+        if(d.id==='back') return '背部：「'+name+'」は、どの棘突起の高さにあるか。';
+        if(d.id==='chest') return '胸腹部：「'+name+'」の高さはどれか。';
+        return '頭部：「'+name+'」の位置はどれか。';
+      };
+      d.mergedBelow=function(ri,ci){return d.t.rows[ri+1]&&d.t.rows[ri+1][ci]===MU;};
+      // その行に位置する点の表示名（上の行から結合されたセルも含む）
+      d.rowSet=function(ri){
+        var out=[];
+        d.pc.forEach(function(ci){
+          var p=d.cells[ri][ci],r=ri;
+          if(!p&&d.t.rows[ri][ci]===MU){while(r>0&&d.t.rows[r][ci]===MU)r--;p=d.cells[r][ci];}
+          if(p&&!p.dup) out.push(disp(p));
+        });
+        return out;
+      };
+      d.allNames=function(){var o=[];d.t.rows.forEach(function(r,ri){d.pc.forEach(function(ci){var p=d.cells[ri][ci];if(p&&!p.dup)o.push(disp(p));});});return o;};
+      d.labels=d.t.rows.map(function(r,ri){return d.rl(ri);});
+    });
+    var exCell=function(d,ri,ci,p){return d.rl(ri)+'／'+d.cl(ci)+'＝'+disp(p)+(p.mer?'（'+p.mer+'）':'');};
+
+    // 位置（行×列）→経穴
+    G.push(function(){
+      var d=pd(),ri=rnd(d.t.rows.length),ci=pick(d.pc),p=d.cells[ri][ci];
+      if(!p||p.dup) return null;
+      var ans=disp(p),hard=[];
+      for(var r=Math.max(0,ri-2);r<=Math.min(d.t.rows.length-1,ri+2);r++){d.pc.forEach(function(c){var x=d.cells[r][c];if(x&&!x.dup)hard.push(disp(x));});}
+      d.t.rows.forEach(function(rr,r){var x=d.cells[r][ci];if(x&&!x.dup)hard.push(disp(x));});
+      return mk({cat:CAT,q:d.qPos(ri,ci),ans:ans,hard:hard,easy:d.allNames(),
+        exp:exCell(d,ri,ci,p),key:'lv1:'+d.id+ri+'_'+ci});
+    });
+    // 行（高さ）→その高さにある経穴（どの列でも可）
+    G.push(function(){
+      var d=pd(),ri=rnd(d.t.rows.length),set=d.rowSet(ri);
+      if(!set.length) return null;
+      var ans=pick(set),okSet=new Set(set),hard=[];
+      around(d.t.rows,ri,2).forEach(function(r,k){var rr=Math.max(0,ri-2)+k;if(rr!==ri)hard=hard.concat(d.rowSet(rr));});
+      return mk({cat:CAT,q:d.qRow(ri),ans:ans,valid:function(n){return okSet.has(n);},multi:okSet.size>1,hard:hard,easy:d.allNames(),
+        exp:d.rl(ri)+'の高さの経穴：'+set.join('・'),key:'lv2:'+d.id+ri});
+    });
+    // 経穴→高さ
+    G.push(function(){
+      var d=pd(),ri=rnd(d.t.rows.length),ci=pick(d.pc),p=d.cells[ri][ci];
+      if(!p||p.dup||d.mergedBelow(ri,ci)) return null;
+      var ans=d.labels[ri];
+      return mk({cat:CAT,q:d.qRev(p.name),ans:ans,hard:around(d.labels,ri,3),easy:d.labels,
+        ord:function(t){return d.labels.indexOf(t);},
+        exp:exCell(d,ri,ci,p),key:'lv3:'+d.id+ri+'_'+ci});
+    });
+    // 背部：体表指標と棘突起
+    var back=defs[0],lmIdx=back.t.rows.map(function(r,i){return {r:r,i:i};}).filter(function(x){var v=x.r[x.r.length-1];return v&&first(v)!=='最も隆起';});
+    var lmAll=lmIdx.map(function(x){return first(x.r[x.r.length-1]);});
+    G.push(function(){
+      if(F.level&&!F.level.has('back')) return null;
+      var x=pick(lmIdx),lm=first(x.r[x.r.length-1]);
+      return mk({cat:CAT,q:'背部：体表指標「'+lm+'」と同じ高さの棘突起はどれか。',ans:back.labels[x.i],hard:around(back.labels,x.i,3),easy:back.labels,
+        ord:function(t){return back.labels.indexOf(t);},exp:lm+'＝'+back.labels[x.i]+'の高さ',key:'lv4:'+x.i});
+    });
+    G.push(function(){
+      if(F.level&&!F.level.has('back')) return null;
+      var x=pick(lmIdx),lm=first(x.r[x.r.length-1]);
+      return mk({cat:CAT,q:'背部：'+back.labels[x.i]+'の棘突起と同じ高さにある体表指標はどれか。',ans:lm,hard:lmAll,
+        exp:back.labels[x.i]+'の高さ＝'+lm,key:'lv5:'+x.i});
+    });
+    var pre=function(d){return d.id==='back'?'背部':d.id==='chest'?'胸腹部':'頭部';};
+    // 逆引き：経穴→左右方向の位置（列）
+    G.push(function(){
+      var d=pd(),ri=rnd(d.t.rows.length),ci=pick(d.pc),p=d.cells[ri][ci];
+      if(!p||p.dup) return null;
+      var cols=d.pc.map(function(c){return d.cl(c);});
+      return mk({cat:CAT,q:pre(d)+'：「'+p.name+'」は、左右方向のどの位置にあるか。',ans:d.cl(ci),hard:cols,
+        ord:function(t){return cols.indexOf(t);},exp:exCell(d,ri,ci,p),key:'lv6:'+d.id+ri+'_'+ci});
+    });
+    // 逆引き：経穴→高さ＋左右の位置（組み合わせ）
+    G.push(function(){
+      var d=pd(),ri=rnd(d.t.rows.length),ci=pick(d.pc),p=d.cells[ri][ci];
+      if(!p||p.dup||d.mergedBelow(ri,ci)) return null;
+      var f=function(r,c){return d.rl(r)+'\n'+d.cl(c);},hard=[];
+      for(var r=Math.max(0,ri-2);r<=Math.min(d.t.rows.length-1,ri+2);r++){d.pc.forEach(function(c){if(!(r===ri&&c===ci))hard.push(f(r,c));});}
+      return mk({cat:CAT,q:pre(d)+'：「'+p.name+'」の高さと左右の位置の組み合わせで正しいのはどれか。',ans:f(ri,ci),hard:hard,
+        exp:exCell(d,ri,ci,p),key:'lv7:'+d.id+ri+'_'+ci});
+    });
+    G.ctx={defs:defs,disp:disp,pd:pd};
+    return G;
+  }
+
+  /* ======================= 脳神経 ======================= */
+  function buildCranial(){
+    var G=[],CAT='cranial';
+    var N=D.nerveData.map(function(n){
+      var short=n.name.replace(/（.*）/,'');
+      return {rn:n.rn,name:n.name,short:short,label:short,rows:n.rows};
+    });
+    var labels=N.map(function(n){return n.label;});
+    var rnLab=function(n){return '第'+n.rn+'脳神経';};
+    var clean=function(s){return String(s).replace(/（注\d+）/g,'').trim();};
+    var tokens=function(n,idx,splitter){
+      var out=[];
+      n.rows.forEach(function(r){var v=clean(r[idx]);if(v==='—'||v==='')return;(splitter?v.split(splitter):[v]).forEach(function(t){t=t.trim();if(t&&t!=='↓')out.push(t);});});
+      return uniq(out);
+    };
+    var expN=function(n){
+      return n.name+'（'+rnLab(n)+'）\n'+n.rows.map(function(r){
+        return '・'+r[0]+'｜核：'+r[1]+'｜神経節：'+clean(r[2])+'｜孔：'+clean(r[3]).replace(/／↓／/g,'→')+'｜支配：'+r[4];
+      }).join('\n');
+    };
+    var hasKind=function(n,k){return n.rows.some(function(r){return r[0].indexOf(k)>=0;});};
+
+    // 線維の種類
+    G.push(function(){
+      var k=pick(['運動','感覚','副交感']),yes=rnd(2)===0;
+      var has=N.filter(function(n){return hasKind(n,k);}),lack=N.filter(function(n){return !hasKind(n,k);});
+      var ans=pick(yes?has:lack),setYes=new Set(has.map(function(n){return n.label;}));
+      var q=yes?k+'神経線維を含む脳神経はどれか。':k+'神経線維を含まない脳神経はどれか。';
+      return mk({cat:CAT,q:q,ans:ans.label,valid:function(t){return yes?setYes.has(t):!setYes.has(t);},multi:true,
+        hard:(yes?lack:has).map(function(n){return n.label;}),easy:labels,
+        exp:k+'線維を含む脳神経：'+has.map(function(n){return n.short;}).join('・')+'\n'+expN(ans),key:'cr1:'+k+yes+ans.rn});
+    });
+    // 番号と名称
+    G.push(function(){
+      var i=rnd(N.length),n=N[i];
+      var nums=N.map(rnLab);
+      if(rnd(2)) return mk({cat:CAT,q:'「'+n.short+'」は第何脳神経か。',ans:rnLab(n),hard:around(nums,i,3),easy:nums,
+        ord:function(t){return nums.indexOf(t);},exp:expN(n),key:'cr2a:'+n.rn});
+      return mk({cat:CAT,q:rnLab(n)+'はどれか。',ans:n.label,hard:around(labels,i,3),easy:labels,
+        ord:function(t){return labels.indexOf(t);},exp:expN(n),key:'cr2b:'+n.rn});
+    });
+    // 脳神経核の位置
+    var cores=uniq(flat(N.map(function(n){return n.rows.map(function(r){return r[1];});})).filter(function(c){return c!=='—';}));
+    G.push(function(){
+      var X=pick(cores),cand=N.filter(function(n){return n.rows.some(function(r){return r[1]===X;});});
+      var ans=pick(cand);
+      var bad=new Set(N.filter(function(n){return n.rows.some(function(r){return r[1]!=='—'&&(r[1].indexOf(X)>=0||X.indexOf(r[1])>=0);});}).map(function(n){return n.label;}));
+      return mk({cat:CAT,q:'脳神経核が「'+X+'」にある脳神経はどれか。',ans:ans.label,valid:function(t){return bad.has(t);},multi:cand.length>1,
+        hard:N.map(function(n){return n.label;}),exp:expN(ans),key:'cr3:'+X+ans.rn});
+    });
+    // 通過する孔
+    var foraAll=uniq(flat(N.map(function(n){return tokens(n,3,/／|↓/);})));
+    G.push(function(){
+      var X=pick(foraAll),has=N.filter(function(n){return tokens(n,3,/／|↓/).indexOf(X)>=0;});
+      var ans=pick(has),setH=new Set(has.map(function(n){return n.label;}));
+      return mk({cat:CAT,q:'「'+X+'」を通る脳神経はどれか。',ans:ans.label,valid:function(t){return setH.has(t);},multi:has.length>1,
+        hard:labels,exp:'「'+X+'」を通る脳神経：'+has.map(function(n){return n.short;}).join('・')+'\n'+expN(ans),key:'cr4a:'+X+ans.rn});
+    });
+    G.push(function(){
+      var n=pick(N),mine=tokens(n,3,/／|↓/),ans=pick(mine);
+      var mineSet=new Set(mine);
+      return mk({cat:CAT,q:n.short+'が通る孔（管・裂）はどれか。',ans:ans,valid:function(t){return mineSet.has(t);},multi:mineSet.size>1,
+        hard:foraAll,exp:expN(n),key:'cr4b:'+n.rn+ans});
+    });
+    // 神経節
+    var gangAll=uniq(flat(N.map(function(n){return tokens(n,2);}))).filter(function(g){return g!=='末梢の神経節';});
+    G.push(function(){
+      var X=pick(gangAll),has=N.filter(function(n){return tokens(n,2).indexOf(X)>=0;});
+      var ans=pick(has),setH=new Set(has.map(function(n){return n.label;}));
+      return mk({cat:CAT,q:'「'+X+'」に関係する脳神経はどれか。',ans:ans.label,valid:function(t){return setH.has(t);},multi:has.length>1,
+        hard:labels,exp:'「'+X+'」に関係する脳神経：'+has.map(function(n){return n.short;}).join('・')+'\n'+expN(ans),key:'cr5a:'+X+ans.rn});
+    });
+    G.push(function(){
+      var n=pick(N),mine=tokens(n,2).filter(function(g){return g!=='末梢の神経節';});
+      if(!mine.length) return null;
+      var ans=pick(mine),mineSet=new Set(tokens(n,2));
+      return mk({cat:CAT,q:n.short+'に関係する神経節はどれか。',ans:ans,valid:function(t){return mineSet.has(t);},multi:mineSet.size>1,
+        hard:gangAll,exp:expN(n),key:'cr5b:'+n.rn+ans});
+    });
+    // 支配（分布）領域
+    G.push(function(){
+      var n=pick(N),row=pick(n.rows),X=pick(String(row[4]).split('／'));
+      var others=N.filter(function(o){return o!==n;});
+      if(others.some(function(o){return o.rows.some(function(r){return String(r[4]).indexOf(X)>=0;});})) return null;
+      var bad=new Set([n.label]);
+      return mk({cat:CAT,q:'「'+X+'」を支配（分布）する脳神経はどれか。',ans:n.label,valid:function(t){return bad.has(t);},
+        hard:labels,exp:expN(n),key:'cr6:'+n.rn+X});
+    });
+    var ovl=function(a,b){return a===b||a.indexOf(b)>=0||b.indexOf(a)>=0;};
+    var regTok=function(n){return uniq(flat(n.rows.map(function(r){return String(r[4]).split('／');}))).filter(function(t){return t&&t!=='—';});};
+    // 逆引き：神経→脳神経核の位置
+    G.push(function(){
+      var n=pick(N),mine=tokens(n,1);if(!mine.length) return null;
+      var ans=pick(mine);
+      return mk({cat:CAT,q:n.short+'の脳神経核はどこにあるか。',ans:ans,valid:function(t){return mine.some(function(c){return ovl(c,t);});},multi:mine.length>1,
+        hard:cores,exp:expN(n),key:'cr7:'+n.rn+ans});
+    });
+    // 逆引き：神経→支配（分布）領域
+    G.push(function(){
+      var n=pick(N),toks=regTok(n);if(!toks.length) return null;
+      var ans=pick(toks);
+      var others=flat(N.filter(function(o){return o!==n;}).map(regTok));
+      return mk({cat:CAT,q:n.short+'が支配（分布）する領域はどれか。',ans:ans,valid:function(t){return toks.some(function(u){return ovl(u,t);});},multi:toks.length>1,
+        hard:others,exp:expN(n),key:'cr8:'+n.rn+ans});
+    });
+    // 逆引き：神経→含まれる線維の種類
+    var kindStr=function(n){return ['運動','感覚','副交感'].filter(function(k){return hasKind(n,k);}).join('・')+'線維';};
+    G.push(function(){
+      var n=pick(N);
+      return mk({cat:CAT,q:n.short+'に含まれる神経線維の種類はどれか。',ans:kindStr(n),hard:N.map(kindStr),exp:expN(n),key:'cr9:'+n.rn});
+    });
+    // 経由：支配領域→（神経）→通る孔
+    G.push(function(){
+      var n=pick(N),X=pick(regTok(n));if(!X) return null;
+      if(N.some(function(o){return o!==n&&o.rows.some(function(r){return String(r[4]).indexOf(X)>=0;});})) return null;
+      var mine=tokens(n,3,/／|↓/);if(!mine.length) return null;
+      var ans=pick(mine),mset=new Set(mine);
+      return mk({cat:CAT,q:'「'+X+'」を支配する脳神経が通る孔（管・裂）はどれか。',ans:ans,valid:function(t){return mset.has(t);},multi:mine.length>1,
+        hard:foraAll,exp:expN(n),key:'cr10:'+n.rn+X+ans});
+    });
+    G.ctx={N:N,tokens:tokens,rnLab:rnLab};
+    return G;
+  }
+
+  /* ======================= 五行色体表 ======================= */
+  function buildGogyo(){
+    var G=[],CAT='gogyo',E=D.gogyoCols;
+    var rows=[];
+    D.gogyoTables.forEach(function(t,ti){t.rows.forEach(function(r){rows.push({ti:ti,label:r.label,cells:r.cells});});});
+    var prow=function(){var a2=F.gogyo?rows.filter(function(r){return F.gogyo.has(r.ti);}):rows;return pick(a2.length?a2:rows);};
+    var expRow=function(r){return r.label+'：'+r.cells.map(function(c,i){return E[i]+'＝'+c;}).join('・');};
+    // 「五方のうち、木に配当されるのはどれか」
+    G.push(function(){
+      var r=prow(),ci=rnd(5);
+      return mk({cat:CAT,q:r.label+'のうち、'+E[ci]+'に配当されるのはどれか。',ans:r.cells[ci],hard:r.cells,exp:expRow(r),key:'gg1:'+r.label+ci});
+    });
+    // 「五味の酸が配当される五行は」
+    G.push(function(){
+      var r=prow(),ci=rnd(5);
+      return mk({cat:CAT,q:r.label+'の「'+r.cells[ci]+'」が配当される五行はどれか。',ans:E[ci],hard:E,
+        ord:function(t){return E.indexOf(t);},exp:expRow(r),key:'gg2:'+r.label+ci});
+    });
+    // 「五臓の肝と同じ五行に配当される五官は」
+    G.push(function(){
+      var r1=prow(),pool=rnd(10)<6?rows.filter(function(x){return x.ti===r1.ti&&x!==r1;}):rows.filter(function(x){return x!==r1;});
+      if(!pool.length) return null;
+      var r2=pick(pool),ci=rnd(5);
+      return mk({cat:CAT,q:r1.label+'の「'+r1.cells[ci]+'」と同じ五行に配当される'+r2.label+'はどれか。',ans:r2.cells[ci],hard:r2.cells,
+        exp:E[ci]+'：'+r1.label+'＝'+r1.cells[ci]+'、'+r2.label+'＝'+r2.cells[ci]+'\n'+expRow(r1)+'\n'+expRow(r2),key:'gg3:'+r1.label+r2.label+ci});
+    });
+    G.ctx={rows:rows,E:E,prow:prow};
+    return G;
+  }
+
+  /* ======================= 経穴の基本 ======================= */
+  function buildPoint(){
+    var G=[],CAT='point';
+    var mNames=D.meridians.map(function(m){return m.name;});
+    var locCnt={};PTS.forEach(function(x){locCnt[x.p.loc]=(locCnt[x.p.loc]||0)+1;});
+    var all=PTS.map(function(x){return x.p.name;});
+    // 経穴→経絡
+    G.push(function(){
+      var x=pick(PTS),head=x.m.name.charAt(0);
+      return mk({cat:CAT,q:'「'+x.p.name+'」が属する経絡はどれか。',ans:x.m.name,
+        hard:mNames.filter(function(n){return n.charAt(0)===head;}),easy:mNames,exp:x.p.name+'＝'+x.m.name,key:'pt1:'+x.p.no});
+    });
+    // 経絡→経穴
+    G.push(function(){
+      var x=pick(PTS),head=x.m.name.charAt(0),own=new Set(x.m.points.map(function(p){return p.name;}));
+      return mk({cat:CAT,q:x.m.name+'に属する経穴はどれか。',ans:x.p.name,valid:function(n){return own.has(n);},multi:own.size>1,
+        hard:PTS.filter(function(y){return y.m.name.charAt(0)===head&&y.m!==x.m;}).map(function(y){return y.p.name;}),easy:all,
+        exp:x.p.name+'は'+x.m.name+'。',key:'pt2:'+x.p.no});
+    });
+    // 部位→経穴
+    G.push(function(){
+      var x=pick(PTS);if(!x.p.loc||locCnt[x.p.loc]!==1) return null;
+      var names=x.m.points.map(function(p){return p.name;});
+      return mk({cat:CAT,q:'次の部位にある経穴はどれか。\n「'+x.p.loc+'」',ans:x.p.name,hard:around(names,x.i,3),easy:all,
+        exp:x.p.name+'：'+x.p.loc+(x.p.tori?'\n取穴：'+x.p.tori:''),key:'pt4:'+x.p.no});
+    });
+    // 逆引き：経穴→部位
+    G.push(function(){
+      var x=pick(PTS);if(!x.p.loc||locCnt[x.p.loc]!==1) return null;
+      var locs=x.m.points.map(function(p){return p.loc;}).filter(function(l){return l&&locCnt[l]===1;});
+      return mk({cat:CAT,q:'「'+x.p.name+'」の部位として正しいのはどれか。',ans:x.p.loc,hard:around(locs,locs.indexOf(x.p.loc),3),
+        easy:PTS.map(function(y){return y.p.loc;}).filter(Boolean),exp:x.p.name+'：'+x.p.loc,key:'pt6:'+x.p.no});
+    });
+    // 経由：部位→（経穴）→経絡
+    G.push(function(){
+      var x=pick(PTS);if(!x.p.loc||locCnt[x.p.loc]!==1) return null;
+      var head=x.m.name.charAt(0);
+      return mk({cat:CAT,q:'次の部位にある経穴が属する経絡はどれか。\n「'+x.p.loc+'」',ans:x.m.name,
+        hard:mNames.filter(function(n){return n.charAt(0)===head;}),easy:mNames,exp:x.p.name+'：'+x.p.loc+'\n＝'+x.m.name,key:'pt7:'+x.p.no});
+    });
+    // ----- 経穴の名前（順番）：前後・間・最初と最後 -----
+    var seqM=function(){var a2=F.point?D.meridians.filter(function(x){return F.point.has(x.id);}):D.meridians;return pick(a2.length?a2:D.meridians);};
+    var seqExp=function(m,idx,ans){var n=m.points.map(function(p){return p.name;});return m.name+'：'+around(n,idx,2).map(function(x){return x===ans?'【'+x+'】':x;}).join(' → ');};
+    G.push(function(){
+      var m=seqM(),n=m.points.map(function(p){return p.name;}),i=rnd(n.length-1);
+      return mk({cat:CAT,q:m.short+'：「'+n[i]+'」の次の経穴はどれか。',ans:n[i+1],skip:function(x){return x===n[i];},hard:around(n,i+1,4),easy:n,
+        exp:seqExp(m,i+1,n[i+1]),key:'nm1:'+m.id+i});
+    });
+    G.push(function(){
+      var m=seqM(),n=m.points.map(function(p){return p.name;}),i=1+rnd(n.length-1);
+      return mk({cat:CAT,q:m.short+'：「'+n[i]+'」の前の経穴はどれか。',ans:n[i-1],skip:function(x){return x===n[i];},hard:around(n,i-1,4),easy:n,
+        exp:seqExp(m,i-1,n[i-1]),key:'nm2:'+m.id+i});
+    });
+    G.push(function(){
+      var m=seqM(),n=m.points.map(function(p){return p.name;});
+      if(n.length<3) return null;
+      var i=rnd(n.length-2);
+      return mk({cat:CAT,q:m.short+'：「'+n[i]+'」と「'+n[i+2]+'」の間にある経穴はどれか。',ans:n[i+1],
+        skip:function(x){return x===n[i]||x===n[i+2];},hard:around(n,i+1,4),easy:n,exp:seqExp(m,i+1,n[i+1]),key:'nm3:'+m.id+i});
+    });
+    G.push(function(){
+      var m=seqM(),n=m.points.map(function(p){return p.name;}),last=rnd(2)===1;
+      var others=D.meridians.filter(function(x){return x!==m;}).map(function(x){return last?x.points[x.points.length-1].name:x.points[0].name;});
+      var near=last?[n[n.length-2],n[n.length-3],n[0]]:[n[1],n[2],n[n.length-1]];
+      var ans=last?n[n.length-1]:n[0];
+      return mk({cat:CAT,q:m.name+'の'+(last?'最後（終点）':'最初（起点）')+'の経穴はどれか。',ans:ans,hard:near.concat(others),easy:n,
+        exp:m.name+'：'+(last?'… '+n.slice(-3).join(' → ')+'（終点）':'（起点）'+n.slice(0,3).join(' → ')+' …'),key:'nm4:'+m.id+last});
+    });
+    G.ctx={locCnt:locCnt};
+    return G;
+  }
+
+  /* ======================= 骨度法 ======================= */
+  function buildKotsudo(){
+    var G=[],CAT='kotsudo';
+    var items=flat(D.KOTSUDO_DATA.filter(function(r){return r.region.indexOf('同身寸')<0;}).map(function(r){return r.items.map(function(i){return {region:r.region,from:i.from,len:i.len};});}));
+    var itPool=function(){var a2=F.kotsudo?items.filter(function(i){return F.kotsudo.has(i.region);}):items;return a2.length?a2:items;};
+    var pit=function(){return pick(itPool());};
+    var val=function(s){var m=String(s).match(/^(?:(\d+)尺)?(?:(\d+)寸)?(?:(\d+)分)?$/);if(!m)return 0;return (+m[1]||0)*100+(+m[2]||0)*10+(+m[3]||0);};
+    var lens=uniq(items.map(function(i){return i.len;}));
+    G.push(function(){
+      var it=pit();
+      return mk({cat:CAT,q:'骨度法で「'+it.from+'」（'+it.region+'）の長さはどれか。',ans:it.len,hard:lens,ord:val,
+        exp:it.region+'：'+it.from+'＝'+it.len,key:'kt1:'+it.from});
+    });
+    G.push(function(){
+      var it=pit(),bad=new Set(items.filter(function(i){return i.len===it.len;}).map(function(i){return i.from;}));
+      return mk({cat:CAT,q:'骨度法で長さが「'+it.len+'」の部位はどれか。',ans:it.from,valid:function(t){return bad.has(t);},multi:bad.size>1,
+        hard:items.map(function(i){return i.from;}),
+        exp:'「'+it.len+'」の部位：'+Array.from(bad).join(' ／ '),key:'kt2:'+it.from});
+    });
+    var regs=D.KOTSUDO_DATA.filter(function(r){return r.region.indexOf('同身寸')<0;}).map(function(r){return r.region;});
+    G.push(function(){
+      var it=pit(),set=new Set(items.filter(function(i){return i.region===it.region;}).map(function(i){return i.from;}));
+      return mk({cat:CAT,q:'骨度法の「'+it.region+'」に含まれる部位はどれか。',ans:it.from,valid:function(t){return set.has(t);},multi:set.size>1,
+        hard:items.filter(function(i){return i.region!==it.region;}).map(function(i){return i.from;}),
+        exp:it.region+'：'+Array.from(set).join(' ／ '),key:'kt3:'+it.from});
+    });
+    G.push(function(){
+      var it=pit();
+      return mk({cat:CAT,q:'骨度法で「'+it.from+'」は、どの区分に含まれるか。',ans:it.region,hard:regs,
+        ord:function(t){return regs.indexOf(t);},exp:it.region+'：'+it.from+'＝'+it.len,key:'kt4:'+it.from});
+    });
+    G.ctx={items:items,pool:itPool};
+    return G;
+  }
+
+  /* ======================= 欧文略語 ======================= */
+  function buildAbbr(){
+    var G=[],CAT='abbr',R=D.RYAKUGO_DATA;
+    var sameInit=function(r,f){return R.filter(function(x){return x!==r&&x.abbr.charAt(0)===r.abbr.charAt(0);}).map(f);};
+    var sameInitEn=function(r){return R.filter(function(x){return x!==r&&x.en.charAt(0)===r.en.charAt(0);}).map(function(x){return x.en;});};
+    G.push(function(){var r=pick(R);return mk({cat:CAT,q:'「'+r.abbr+'」の日本語はどれか。',ans:r.ja,hard:sameInit(r,function(x){return x.ja;}),easy:R.map(function(x){return x.ja;}),
+      exp:r.abbr+'＝'+r.ja+'（'+r.en+'）',key:'ab1:'+r.abbr});});
+    G.push(function(){var r=pick(R);return mk({cat:CAT,q:'「'+r.ja+'」の略語はどれか。',ans:r.abbr,hard:sameInit(r,function(x){return x.abbr;}),easy:R.map(function(x){return x.abbr;}),
+      exp:r.abbr+'＝'+r.ja+'（'+r.en+'）',key:'ab2:'+r.abbr});});
+    G.push(function(){var r=pick(R);return mk({cat:CAT,q:'「'+r.abbr+'」の英語（正式名称）はどれか。',ans:r.en,hard:sameInitEn(r),easy:R.map(function(x){return x.en;}),
+      exp:r.abbr+'＝'+r.en+'（'+r.ja+'）',key:'ab3:'+r.abbr});});
+    var sameBy=function(r,f){return R.filter(function(x){return f(x)===f(r);});};
+    G.push(function(){var r=pick(R),ok=sameBy(r,function(x){return x.ja;}).map(function(x){return x.en;});
+      return mk({cat:CAT,q:'「'+r.ja+'」の英語（正式名称）はどれか。',ans:r.en,valid:function(t){return ok.indexOf(t)>=0;},
+        hard:sameInitEn(r),easy:R.map(function(x){return x.en;}),exp:r.abbr+'＝'+r.ja+'（'+r.en+'）',key:'ab4:'+r.abbr});});
+    G.push(function(){var r=pick(R),ok=sameBy(r,function(x){return x.en;}).map(function(x){return x.ja;});
+      return mk({cat:CAT,q:'「'+r.en+'」の日本語はどれか。',ans:r.ja,valid:function(t){return ok.indexOf(t)>=0;},
+        hard:sameInit(r,function(x){return x.ja;}),easy:R.map(function(x){return x.ja;}),exp:r.abbr+'＝'+r.ja+'（'+r.en+'）',key:'ab5:'+r.abbr});});
+    G.push(function(){var r=pick(R),ok=sameBy(r,function(x){return x.en;}).map(function(x){return x.abbr;});
+      return mk({cat:CAT,q:'「'+r.en+'」の略語はどれか。',ans:r.abbr,valid:function(t){return ok.indexOf(t)>=0;},
+        hard:sameInit(r,function(x){return x.abbr;}),easy:R.map(function(x){return x.abbr;}),exp:r.abbr+'＝'+r.ja+'（'+r.en+'）',key:'ab6:'+r.abbr});});
+    G.ctx={};
+    return G;
+  }
+
+  /* ======================= 分野の定義と出題 ======================= */
+  var CATS=[
+    {id:'yoketsu',name:'要穴',sub:'五行穴・五要穴・八会穴・下合穴など',build:buildYoketsu},
+    {id:'muscle',name:'筋肉',sub:'起始・停止・作用・支配神経・経穴',build:buildMuscle},
+    {id:'level',name:'高さ別',sub:'頭部・胸腹部・背部の高さと経穴',build:buildLevel},
+    {id:'cranial',name:'脳神経',sub:'種類・核・神経節・通過孔・支配',build:buildCranial},
+    {id:'gogyo',name:'五行色体表',sub:'五方・五臓・五味などの配当',build:buildGogyo},
+    {id:'point',name:'経穴の基本',sub:'経絡と経穴・部位から経穴',build:buildPoint},
+    {id:'kotsudo',name:'骨度法',sub:'部位ごとの長さ（寸）',build:buildKotsudo},
+    {id:'abbr',name:'欧文略語',sub:'略語・日本語・英語の対応',build:buildAbbr}
+  ];
+  CATS.forEach(function(c){try{c.gens=c.build();}catch(e){c.gens=[];c.err=e;}});
+
+  // 並び順固定でない問題は、再出題時に選択肢を並べ替える
+  function reshuffle(q){
+    if(q.ordered) return q;
+    var ans=q.opts[q.ai],opts=shuffle(q.opts);
+    return Object.assign({},q,{opts:opts,ai:opts.indexOf(ans)});
+  }
+  /* ======================= 線結び問題 =======================
+     左右の対応が必ず1対1になるよう、mm() で総当たり検証（rel）する。
+     骨度法のように同じ答えを持つ項目（9寸が複数など）は、同一セット内で重複しないよう選ぶ。 */
+  function cx(id){return CATS.filter(function(c){return c.id===id;})[0].gens.ctx||{};}
+  var range=function(n){var a=[];for(var i=0;i<n;i++)a.push(i);return a;};
+  var sample=function(arr,k){return shuffle(arr).slice(0,k);};
+  var sampleDistinct=function(arr,k,kf){
+    var seen=new Set(),out=[];
+    shuffle(arr).forEach(function(x){var key=kf(x);if(out.length<k&&!seen.has(key)){seen.add(key);out.push(x);}});
+    return out.length===k?out:null;
+  };
+  // 右側の語のどれかが他方を含む（＝部分的に正しくなりうる）場合は出題しない
+  var noSub=function(arr){
+    for(var i=0;i<arr.length;i++)for(var j=0;j<arr.length;j++){
+      if(i!==j&&arr[i].length>=4&&arr[j].length>=4&&arr[j].indexOf(arr[i])>=0) return false;
+    }
+    return true;
+  };
+  function shuffleMatch(L,R){
+    var n=L.length,idx=range(n),li,ri,t=0;
+    do{li=shuffle(idx);ri=shuffle(idx);t++;}while(t<20&&li.every(function(v,p){return v===ri[p];}));
+    return {left:li.map(function(i){return L[i];}),right:ri.map(function(j){return R[j];}),
+            ans:li.map(function(i){return ri.indexOf(i);})};
+  }
+  function mm(o){
+    var n=o.L.length;
+    if(n<3||o.R.length!==n) return null;
+    if(uniq(o.L).length!==n||uniq(o.R).length!==n||!noSub(o.R)||!noSub(o.L)) return null;
+    if(o.rel){for(var i=0;i<n;i++)for(var j=0;j<n;j++){if(!!o.rel(i,j)!==(i===j)) return null;}}
+    var swap=!o.noSwap&&rnd(2)===1,sh=swap?shuffleMatch(o.R,o.L):shuffleMatch(o.L,o.R);
+    return {cat:o.cat,title:o.title,note:o.note||'',left:sh.left,right:sh.right,ans:sh.ans,
+      exp:o.exp||o.L.map(function(l,i){return l+' ＝ '+o.R[i];}).join('\n'),
+      key:o.key||(o.title+'|'+o.L.slice().sort().join('|')),
+      L:swap?o.R:o.L,R:swap?o.L:o.R};
+  }
+  // 先頭を無作為に選び、残りは「似ているもの」を優先して選ぶ（kf＝重複させない鍵）
+  function simPick(arr,k,tf,kf,seedItem){
+    if(!arr.length&&!seedItem) return null;
+    var seed=seedItem||pick(arr),out=[seed],sk=kf?kf(seed):null;
+    var scored=arr.filter(function(x){return x!==seed&&(!kf||kf(x)!==sk);}).map(function(x){return {x:x,s:sim(tf(seed),tf(x))};});
+    while(out.length<k&&scored.length){
+      scored.sort(function(a,b){return b.s-a.s;});
+      var top=scored.slice(0,8),ch=weightedPick(top,top.map(function(t){return Math.pow(t.s+0.05,3);}),1)[0];
+      out.push(ch.x);
+      var ck=kf?kf(ch.x):null;
+      scored=scored.filter(function(t){return kf?kf(t.x)!==ck:t!==ch;});
+    }
+    return out.length===k?out:null;
+  }
+  var MG={};
+
+  /* --- 要穴 --- */
+  (function(){
+    var c=cx('yoketsu'),goyu=c.goyu,goyo=c.goyo,sides=c.sides,typeLabel=c.typeLabel,CAT='yoketsu';
+    MG.yoketsu=[
+      function(){var s=pick(sides),ci=rnd(5),rows=sample(goyu[s],4);
+        return mm({cat:CAT,title:'次の経の'+typeLabel(s,ci)+'（五行穴）を結びなさい。',L:rows.map(function(r){return r.org;}),R:rows.map(function(r){return r.cells[ci].name;})});},
+      function(){var s=pick(sides),r=pick(goyu[s]);
+        return mm({cat:CAT,title:r.org+'の五行穴を結びなさい。',L:range(5).map(function(j){return typeLabel(s,j);}),R:r.cells.map(function(x){return x.name;})});},
+      function(){var s=pick(sides),r=pick(goyo[s]);
+        return mm({cat:CAT,title:r.org+'の五要穴を結びなさい。',L:goyo.cols.map(function(t,j){return j===4?'兪穴（背部兪穴）':t;}),R:r.cells.map(function(x){return x.name;})});},
+      function(){var s=pick(sides),ci=rnd(5),rows=sample(goyo[s],4);
+        return mm({cat:CAT,title:'次の臓腑の'+(ci===4?'兪穴（背部兪穴）':goyo.cols[ci])+'を結びなさい。',L:rows.map(function(r){return r.org;}),R:rows.map(function(r){return r.cells[ci].name;})});},
+      function(){var rows=sample(D.hakkai.rows,5);
+        return mm({cat:CAT,title:'八会穴を結びなさい。',L:rows.map(function(r){return r.k;}),R:rows.map(function(r){return r.cell.name;})});},
+      function(){var rows=D.soshu.rows;
+        return mm({cat:CAT,title:'四総穴を結びなさい。',L:rows.map(function(r){return r.k;}),R:rows.map(function(r){return r.cell.name;})});},
+      function(){var rows=sample(D.gego.rows,5);
+        return mm({cat:CAT,title:'六腑とその下合穴を結びなさい。',L:rows.map(function(r){return r.k;}),R:rows.map(function(r){return r.cell.name;})});},
+      function(){
+        var list=[];D.hasso.pairs.forEach(function(p){list.push({m:p.m1,c:p.c1});list.push({m:p.m2,c:p.c2});});
+        var pk=sample(list,4);
+        return mm({cat:CAT,title:'八総穴（八脈交会穴）と、通じる奇経八脈を結びなさい。',L:pk.map(function(x){return x.c.name;}),R:pk.map(function(x){return x.m;})});}
+    ];
+  })();
+
+  /* --- 筋肉 --- */
+  (function(){
+    var c=cx('muscle'),MS=c.MS,nerveKeys=c.nerveKeys,ptsOf=c.ptsOf,CAT='muscle';
+    MG.muscle=[
+      function(){
+        var lab=pick(['起始','停止','作用']),ms=simPick(c.pool(),4,function(m){return m.r[lab];},function(m){return m.r[lab];});
+        if(!ms) return null;
+        var R=ms.map(function(m){return m.r[lab];});
+        return mm({cat:CAT,title:'次の筋の'+lab+'を結びなさい。',L:ms.map(function(m){return m.dn;}),R:R,
+          rel:function(i,j){return ms[i].r[lab]===R[j];}});
+      },
+      function(){
+        var pool=shuffle(c.pool()),ms=[],used=[];
+        pool.forEach(function(m){
+          var ks=nerveKeys(m.r['支配神経']);
+          if(ms.length>=4||!ks.length) return;
+          if(ks.some(function(k){return used.indexOf(k)>=0;})) return;
+          ms.push(m);used=used.concat(ks);
+        });
+        if(ms.length<4) return null;
+        var R=ms.map(function(m){return m.r['支配神経'];});
+        return mm({cat:CAT,title:'次の筋の支配神経を結びなさい。',L:ms.map(function(m){return m.dn;}),R:R,
+          rel:function(i,j){return ms[i].r['支配神経']===R[j];}});
+      },
+      function(){
+        var ms=sampleDistinct(c.pool().filter(function(m){return m.pts.length;}),4,function(m){return m.dn;});
+        if(!ms) return null;
+        var R=[];
+        for(var i=0;i<ms.length;i++){
+          var others=ms.filter(function(_,k){return k!==i;});
+          var ok=ptsOf(ms[i]).filter(function(p){return !others.some(function(o){return ptsOf(o).indexOf(p)>=0;});});
+          if(!ok.length) return null;
+          R.push(pick(ok));
+        }
+        return mm({cat:CAT,title:'次の筋に該当する経穴を結びなさい。',L:ms.map(function(m){return m.dn;}),R:R,
+          rel:function(i,j){return ptsOf(ms[i]).indexOf(R[j])>=0;}});
+      }
+    ];
+  })();
+
+  /* --- 高さ別 --- */
+  (function(){
+    var c=cx('level'),defs=c.defs,disp=c.disp,CAT='level';
+    MG.level=[
+      function(){
+        var d=c.pd(),ci=pick(d.pc),rows=[];
+        d.t.rows.forEach(function(r,ri){var p=d.cells[ri][ci];if(p&&!p.dup&&!d.mergedBelow(ri,ci))rows.push({ri:ri,name:disp(p)});});
+        var pk=sampleDistinct(rows,4,function(x){return x.name;});
+        if(!pk) return null;
+        var title=d.id==='back'?'背部：'+d.cl(ci)+'の経穴を、棘突起の高さと結びなさい。'
+                 :d.id==='chest'?'胸腹部：'+d.cl(ci)+'の経穴を、高さと結びなさい。'
+                 :'頭部：'+d.cl(ci)+'の経穴を、位置と結びなさい。';
+        var R=pk.map(function(x){return x.name;});
+        return mm({cat:CAT,title:title,L:pk.map(function(x){return d.rl(x.ri);}),R:R,rel:function(i,j){return pk[i].name===R[j];}});
+      }
+    ];
+  })();
+
+  /* --- 脳神経 --- */
+  (function(){
+    var c=cx('cranial'),N=c.N,tokens=c.tokens,rnLab=c.rnLab,CAT='cranial';
+    var fora=function(n){return tokens(n,3,/／|↓/);};
+    MG.cranial=[
+      function(){var pk=sample(N,5);
+        return mm({cat:CAT,title:'脳神経の番号と名称を結びなさい。',L:pk.map(rnLab),R:pk.map(function(n){return n.short;})});},
+      function(){
+        var cand=N.filter(function(n){return fora(n).length===1;}),pk=sampleDistinct(cand,4,function(n){return fora(n)[0];});
+        if(!pk) return null;
+        var R=pk.map(function(n){return fora(n)[0];});
+        return mm({cat:CAT,title:'脳神経と、その通る孔（管・裂）を結びなさい。',L:pk.map(function(n){return n.short;}),R:R,
+          rel:function(i,j){return fora(pk[i]).indexOf(R[j])>=0;}});
+      },
+      function(){
+        var pk=[],R=[];
+        shuffle(N).forEach(function(n){
+          if(pk.length>=4) return;
+          var toks=uniq(flat(n.rows.map(function(r){return String(r[4]).split('／');})));
+          var okT=toks.filter(function(X){return !N.some(function(o){return o!==n&&o.rows.some(function(r){return String(r[4]).indexOf(X)>=0;});});});
+          if(okT.length){pk.push(n);R.push(pick(okT));}
+        });
+        if(pk.length<4) return null;
+        return mm({cat:CAT,title:'脳神経と、その支配（分布）領域を結びなさい。',L:pk.map(function(n){return n.short;}),R:R,
+          rel:function(i,j){return pk[i].rows.some(function(r){return String(r[4]).split('／').indexOf(R[j])>=0;});}});
+      }
+    ];
+  })();
+
+  /* --- 五行色体表 --- */
+  (function(){
+    var c=cx('gogyo'),rows=c.rows,E=c.E,CAT='gogyo';
+    MG.gogyo=[
+      function(){var r=c.prow();
+        return mm({cat:CAT,title:r.label+'と五行を結びなさい。',L:E.slice(),R:r.cells.slice()});},
+      function(){
+        var r1=c.prow(),pool=rows.filter(function(x){return x.ti===r1.ti&&x!==r1;});
+        if(!pool.length) return null;
+        var r2=pick(pool),cis=sample(range(5),4);
+        var R=cis.map(function(k){return r2.cells[k];});
+        return mm({cat:CAT,title:r1.label+'と同じ五行に配当される'+r2.label+'を結びなさい。',L:cis.map(function(k){return r1.cells[k];}),R:R,
+          rel:function(i,j){return r2.cells.indexOf(R[j])===cis[i];},
+          exp:cis.map(function(k){return E[k]+'：'+r1.cells[k]+' ＝ '+r2.cells[k];}).join('\n')});
+      }
+    ];
+  })();
+
+  /* --- 経穴の基本 --- */
+  (function(){
+    var c=cx('point'),locCnt=c.locCnt,CAT='point';
+    MG.point=[
+      function(){
+        var pk=simPick(PTS,4,function(x){return x.p.name;},function(x){return x.m.name;});
+        if(!pk) return null;
+        var R=pk.map(function(x){return x.m.name;});
+        return mm({cat:CAT,title:'経穴と、属する経絡を結びなさい。',L:pk.map(ptName),R:R,rel:function(i,j){return pk[i].m.name===R[j];}});
+      },
+      function(){
+        var pk=sampleDistinct(PTS.filter(function(x){return x.p.loc&&locCnt[x.p.loc]===1;}),4,function(x){return x.m.name;});
+        if(!pk) return null;
+        return mm({cat:CAT,title:'部位の説明と経穴を結びなさい。',L:pk.map(function(x){return x.p.loc;}),R:pk.map(ptName)});
+      }
+    ];
+  })();
+  function ptName(x){return x.p.name;}
+
+  /* --- 骨度法（同じ長さの部位が複数あるため、長さが重複しないように選ぶ） --- */
+  (function(){
+    var c=cx('kotsudo'),items=c.items,CAT='kotsudo';
+    MG.kotsudo=[
+      function(){
+        var k=rnd(2)?5:4,base=c.pool(),enough=uniq(base.map(function(i){return i.len;})).length>=k;
+        var pk=simPick(enough?base:items,k,function(i){return i.from;},function(i){return i.len;},enough?null:pick(base));
+        if(!pk) return null;
+        var R=pk.map(function(i){return i.len;});
+        var exp=pk.map(function(it){
+          var same=items.filter(function(o){return o.len===it.len&&o.from!==it.from;}).map(function(o){return o.from;});
+          return it.from+' ＝ '+it.len+(same.length?'\n　（同じ'+it.len+'：'+same.join('・')+'）':'');
+        }).join('\n');
+        return mm({cat:CAT,title:'骨度法：部位と長さを結びなさい。',note:'同じ長さの部位は他にもありますが、この問題の中では長さが重複しません。',
+          L:pk.map(function(i){return i.from;}),R:R,
+          rel:function(i,j){return pk[i].len===R[j];},exp:exp});
+      }
+    ];
+  })();
+
+  /* --- 欧文略語 --- */
+  (function(){
+    var R0=D.RYAKUGO_DATA,CAT='abbr';
+    MG.abbr=[
+      function(){var pk=simPick(R0,5,function(r){return r.abbr;});if(!pk) return null;
+        return mm({cat:CAT,title:'略語と日本語を結びなさい。',L:pk.map(function(r){return r.abbr;}),R:pk.map(function(r){return r.ja;})});},
+      function(){var pk=simPick(R0,4,function(r){return r.abbr;});if(!pk) return null;
+        return mm({cat:CAT,title:'略語と英語（正式名称）を結びなさい。',L:pk.map(function(r){return r.abbr;}),R:pk.map(function(r){return r.en;})});}
+    ];
+  })();
+
+  /* --- 線結び：問い方の追加（B↔C など） --- */
+  (function(){
+    var c=cx('yoketsu'),goyu=c.goyu,sides=c.sides,typeLabel=c.typeLabel,sideName=c.sideName;
+    // 五行穴と、その種類（井木穴…）
+    MG.yoketsu.push(function(){
+      var s=pick(sides),cis=sample(range(5),4),pk=cis.map(function(ci){return {ci:ci,c:pick(goyu[s]).cells[ci]};});
+      return mm({cat:'yoketsu',title:sideName[s]+'の五行穴と、その種類を結びなさい。',L:pk.map(function(x){return x.c.name;}),
+        R:pk.map(function(x){return typeLabel(s,x.ci);}),rel:function(i,j){return pk[i].ci===pk[j].ci;}});
+    });
+  })();
+  (function(){
+    var c=cx('muscle'),MS=c.MS;
+    // 同じ筋の起始と停止
+    MG.muscle.push(function(){
+      var ms=sampleDistinct(c.pool(),4,function(m){return m.r['起始']+'|'+m.r['停止'];});
+      if(!ms) return null;
+      var L=ms.map(function(m){return m.r['起始'];}),R=ms.map(function(m){return m.r['停止'];});
+      return mm({cat:'muscle',title:'同じ筋の起始と停止を結びなさい。',note:'対象の筋：'+ms.map(function(m){return m.dn;}).join('・'),
+        L:L,R:R,rel:function(i,j){return ms[i].r['停止']===R[j];},
+        exp:ms.map(function(m){return m.dn+'：'+m.r['起始']+' ＝ '+m.r['停止'];}).join('\n')});
+    });
+  })();
+  (function(){
+    var c=cx('level'),defs=c.defs,disp=c.disp;
+    // 同じ高さの経穴と、左右の位置
+    MG.level.push(function(){
+      var d=c.pd(),ri=rnd(d.t.rows.length),pts=[];
+      d.pc.forEach(function(ci){var p=d.cells[ri][ci];if(p&&!p.dup)pts.push({ci:ci,name:disp(p)});});
+      if(pts.length<3) return null;
+      pts=sample(pts,Math.min(5,pts.length));
+      var rl=d.rl(ri);
+      var title=d.id==='back'?'背部：'+rl+'の棘突起の高さにある経穴を、左右の位置と結びなさい。'
+               :d.id==='chest'?'胸腹部：高さ「'+rl+'」にある経穴を、左右の位置と結びなさい。'
+               :'頭部：'+rl+'にある経穴を、左右の位置と結びなさい。';
+      return mm({cat:'level',title:title,L:pts.map(function(x){return d.cl(x.ci);}),R:pts.map(function(x){return x.name;}),
+        rel:function(i,j){return pts[i].ci===pts[j].ci;}});
+    });
+  })();
+  (function(){
+    var c=cx('kotsudo'),items=c.items;
+    // 部位と、含まれる区分
+    MG.kotsudo.push(function(){
+      var base=c.pool(),pk=simPick(items,4,function(i){return i.from;},function(i){return i.region;},pick(base));
+      if(!pk) return null;
+      return mm({cat:'kotsudo',title:'骨度法：部位と、含まれる区分を結びなさい。',L:pk.map(function(i){return i.from;}),R:pk.map(function(i){return i.region;}),
+        rel:function(i,j){return pk[i].region===pk[j].region;}});
+    });
+  })();
+  (function(){
+    var R0=D.RYAKUGO_DATA;
+    // 日本語と英語（略語を介さない組み合わせ）
+    MG.abbr.push(function(){
+      var pk=simPick(R0,4,function(r){return r.ja;});if(!pk) return null;
+      return mm({cat:'abbr',title:'日本語と英語（正式名称）を結びなさい。',L:pk.map(function(r){return r.ja;}),R:pk.map(function(r){return r.en;})});
+    });
+  })();
+
+  (function(){
+    var mkSeq=function(next){
+      return function(){
+        var a2=F.point?D.meridians.filter(function(x){return F.point.has(x.id);}):D.meridians,m=pick(a2.length?a2:D.meridians);
+        var n=m.points.map(function(p){return p.name;}),idxs=shuffle(range(n.length-1)),pk=[];
+        idxs.forEach(function(i){if(pk.length<4&&pk.every(function(j){return Math.abs(i-j)>=2;}))pk.push(i);});
+        if(pk.length<4) return null;
+        var off=next?1:-1;
+        pk=pk.map(function(i){return next?i:i+1;});
+        if(!next) pk=pk.filter(function(i){return i>=1;});
+        if(pk.length<4) return null;
+        var L=pk.map(function(i){return n[i];}),R=pk.map(function(i){return n[i+off];});
+        if(R.some(function(x){return L.indexOf(x)>=0;})) return null;
+        return mm({cat:'point',title:m.name+'：経穴と、その'+(next?'次':'前')+'の経穴を結びなさい。',L:L,R:R,noSwap:true,
+          exp:L.map(function(l,i){return next?l+' → '+R[i]:R[i]+' → '+l;}).join('\n'),key:'nmm:'+m.id+L.join('|')+next});
+      };
+    };
+    MG.point.push(mkSeq(true));
+    MG.point.push(mkSeq(false));
+  })();
+
+  /* --- 線結び：4択と同じ全領域に揃える（特定穴の分類／神経線維の種類／核・神経節／英語から） --- */
+  (function(){
+    var reqCount={};PTS.forEach(function(x){if(x.p.req)reqCount[x.p.req]=(reqCount[x.p.req]||0)+1;});
+    var uniqReq=PTS.filter(function(x){return x.p.req&&x.p.req!=='八脈交会穴'&&reqCount[x.p.req]===1;});
+    // 特定穴の分類
+    MG.yoketsu.push(function(){
+      var pk=simPick(uniqReq,4,function(x){return x.p.req;},function(x){return x.p.req;});
+      if(!pk) return null;
+      var R=pk.map(function(x){return x.p.req;});
+      return mm({cat:'yoketsu',title:'経穴と、要穴としての分類を結びなさい。',L:pk.map(ptName),R:R,
+        rel:function(i,j){return pk[i].p.req===R[j];}});
+    });
+  })();
+  (function(){
+    var c=cx('cranial'),N=c.N,tokens=c.tokens,CAT='cranial';
+    var kindsOf=function(n){
+      return ['運動','感覚','副交感'].filter(function(k){return n.rows.some(function(r){return r[0].indexOf(k)>=0;});}).join('・')+'線維';
+    };
+    // 神経線維の種類（運動・感覚・副交感の組み合わせ）
+    MG.cranial.push(function(){
+      var pk=sampleDistinct(N,4+rnd(2),kindsOf);
+      if(!pk) return null;
+      var R=pk.map(kindsOf);
+      return mm({cat:CAT,title:'脳神経と、含まれる神経線維の種類（すべて）を結びなさい。',L:pk.map(function(n){return n.short;}),R:R,
+        rel:function(i,j){return kindsOf(pk[i])===R[j];}});
+    });
+    // 脳神経核の位置：範囲が重なる記載（橋／橋〜延髄／延髄／延髄〜頸髄 など）は、必ずまとめて出題する
+    MG.cranial.push(function(){
+      var byCore={};
+      N.forEach(function(n){var t=tokens(n,1);if(t.length===1)(byCore[t[0]]=byCore[t[0]]||[]).push(n);});
+      var names=Object.keys(byCore);
+      var overlap=function(a2,b2){return a2!==b2&&(a2.indexOf(b2)>=0||b2.indexOf(a2)>=0);};
+      var closure=function(start){
+        var set=[start],grew=true;
+        while(grew){grew=false;names.forEach(function(c2){if(set.indexOf(c2)<0&&set.some(function(x){return overlap(c2,x);})){set.push(c2);grew=true;}});}
+        return set;
+      };
+      var chosen=closure(pick(names));
+      var rest=shuffle(names.filter(function(c2){return chosen.indexOf(c2)<0;}));
+      // 3組以上になるまで、別のまとまり（または独立した記載）を足す。余裕があれば半々で追加
+      while(rest.length&&(chosen.length<3||(chosen.length<5&&rnd(2)===0))){
+        var add=closure(rest[0]);
+        if(chosen.length+add.length>5) break;
+        chosen=chosen.concat(add);
+        rest=rest.filter(function(c2){return chosen.indexOf(c2)<0;});
+      }
+      if(chosen.length<3) return null;
+      var pk=chosen.map(function(c2){return pick(byCore[c2]);});
+      var R=chosen.slice();
+      var hasOverlap=chosen.some(function(x){return chosen.some(function(y){return overlap(x,y);});});
+      return mm({cat:CAT,title:'脳神経と、その脳神経核の位置を結びなさい。',
+        note:hasOverlap?'「橋」と「橋〜延髄」のように範囲が重なる記載も、別の項目として出題しています。記載どおりに結んでください。':'',
+        L:pk.map(function(n){return n.short;}),R:R,
+        rel:function(i,j){return tokens(pk[i],1)[0]===R[j];},
+        key:'mcore:'+chosen.slice().sort().join('|')+pk.map(function(n){return n.rn;}).join('')});
+    });
+    // 関係する神経節
+    var gTok=function(n){return tokens(n,2).filter(function(g){return g!=='末梢の神経節';});};
+    MG.cranial.push(function(){
+      var pk=[],R=[];
+      shuffle(N).forEach(function(n){
+        if(pk.length>=4) return;
+        var all=tokens(n,2);
+        var opts=gTok(n).filter(function(t){
+          return pk.every(function(o){return tokens(o,2).indexOf(t)<0;})&&R.every(function(r){return all.indexOf(r)<0;});
+        });
+        if(opts.length){pk.push(n);R.push(pick(opts));}
+      });
+      if(pk.length<4) return null;
+      return mm({cat:CAT,title:'脳神経と、関係する神経節を結びなさい。',L:pk.map(function(n){return n.short;}),R:R,
+        rel:function(i,j){return tokens(pk[i],2).indexOf(R[j])>=0;}});
+    });
+  })();
+  (function(){
+    var R0=D.RYAKUGO_DATA;
+    var mkAb=function(title,lf,rf,tf){
+      return function(){
+        var pk=simPick(R0,5,tf);if(!pk) return null;
+        return mm({cat:'abbr',title:title,L:pk.map(lf),R:pk.map(rf)});
+      };
+    };
+    var ja=function(r){return r.ja;},en=function(r){return r.en;},ab=function(r){return r.abbr;};
+    MG.abbr.push(mkAb('日本語と略語を結びなさい。',ja,ab,ja));
+    MG.abbr.push(mkAb('英語と日本語を結びなさい。',en,ja,ab));
+    MG.abbr.push(mkAb('英語と略語を結びなさい。',en,ab,ab));
+  })();
+
+  /* ======================= 大分野・中分野・小分野 ======================= */
+  var stripT=function(t){return String(t).replace(/における五行配当$/,'');};
+  var kReg=D.KOTSUDO_DATA.filter(function(r){return r.region.indexOf('同身寸')<0;}).map(function(r){return r.region;});
+  var MIDS={
+    yoketsu:{kind:'gens',list:[
+      {id:'gogyo',name:'五行穴',px:['gy1','gy2','gy3','gy4'],mre:/五行穴/},
+      {id:'goyo',name:'五要穴（原・郄・絡・募・兪）',px:['yo1','yo2','yo3','yo4','yo5'],mre:/五要穴|次の臓腑の/},
+      {id:'req',name:'特定穴の分類',px:['rq1','rq2'],mre:/分類/},
+      {id:'hakkai',name:'八会穴',px:['hk1','hk2'],mre:/八会穴/},
+      {id:'soshu',name:'四総穴',px:['ss1','ss2'],mre:/四総穴/},
+      {id:'gego',name:'下合穴',px:['gg1','gg2'],mre:/下合穴/},
+      {id:'hasso',name:'八総穴（八脈交会穴）',px:['hs1','hs2','hs3'],mre:/八総穴/}]},
+    muscle:{kind:'data',list:D.muscleCats.map(function(c){return {id:c.cat,name:c.cat,v:c.cat};})},
+    level:{kind:'data',list:[{id:'head',name:'頭部'},{id:'chest',name:'胸腹部'},{id:'back',name:'背部'}]},
+    cranial:{kind:'gens',list:[
+      {id:'num',name:'番号と名称',px:['cr2a','cr2b'],mre:/番号と名称/},
+      {id:'fiber',name:'神経線維の種類',px:['cr1','cr9'],mre:/神経線維/},
+      {id:'core',name:'脳神経核・神経節',px:['cr3','cr5a','cr5b','cr7'],mre:/脳神経核|神経節/},
+      {id:'foramen',name:'通る孔（管・裂）',px:['cr4a','cr4b','cr10'],mre:/通る孔/},
+      {id:'region',name:'支配（分布）領域',px:['cr6','cr8'],mre:/支配/}]},
+    gogyo:{kind:'data',list:D.gogyoTables.map(function(t,i){return {id:'t'+i,name:stripT(t.title),v:i};})},
+    point:{kind:'gens',list:[
+      {id:'rel',name:'経絡と経穴',px:['pt1','pt2'],mre:/経絡/},
+      {id:'loc',name:'経穴の部位',px:['pt4','pt6','pt7'],mre:/部位/},
+      {id:'name',name:'経穴の名前（順番）',px:['nm1','nm2','nm3','nm4','nmm'],mre:/次の経穴|前の経穴/}]},
+    kotsudo:{kind:'data',list:kReg.map(function(r,i){return {id:'r'+i,name:r,v:r};})},
+    abbr:{kind:'gens',list:[
+      {id:'fromabbr',name:'略語から（→日本語・英語）',px:['ab1','ab3'],mre:/^略語と/},
+      {id:'fromja',name:'日本語から（→略語・英語）',px:['ab2','ab4'],mre:/^日本語と/},
+      {id:'fromen',name:'英語から（→日本語・略語）',px:['ab5','ab6'],mre:/^英語と/}]}
+  };
+  CATS.forEach(function(c){var d=MIDS[c.id];c.kind=d.kind;c.mids=d.list;c.midGens={};c.midMG={};c.unassigned=[];c.unassignedM=[];});
+  var catById=function(id){return CATS.filter(function(c){return c.id===id;})[0];};
+
+  // 出題パターンを中分野へ振り分ける（4択＝問題IDの接頭辞、線結び＝題名）
+  (function(){
+    CATS.forEach(function(c){
+      if(c.kind!=='gens') return;
+      c.gens.forEach(function(g){
+        var px=null;
+        for(var t=0;t<500&&!px;t++){var q;try{q=g();}catch(e){q=null;}if(q)px=String(q.key).split(':')[0];}
+        var mid=px?c.mids.filter(function(m){return m.px.indexOf(px)>=0;})[0]:null;
+        if(mid)(c.midGens[mid.id]=c.midGens[mid.id]||[]).push(g);else c.unassigned.push(px||'(生成不可)');
+      });
+      (MG[c.id]||[]).forEach(function(g){
+        var title=null;
+        for(var t=0;t<500&&!title;t++){var q;try{q=g();}catch(e){q=null;}if(q)title=q.title;}
+        var mid=title?c.mids.filter(function(m){return m.mre&&m.mre.test(title);})[0]:null;
+        if(mid)(c.midMG[mid.id]=c.midMG[mid.id]||[]).push(g);else c.unassignedM.push(title||'(生成不可)');
+      });
+    });
+  })();
+  function availMid(mode,c,id){
+    if(c.kind==='data') return mode==='q4'?c.gens.length>0:!!(MG[c.id]&&MG[c.id].length);
+    var m=(mode==='q4'?c.midGens:c.midMG)[id];
+    return !!(m&&m.length);
+  }
+  // 画面用のツリー（q4＝4択で使える、mt＝線結びで使える）
+  var TREE=CATS.map(function(c){
+    return {id:c.id,name:c.name,sub:c.sub,mids:c.mids.map(function(m){
+      return {id:m.id,name:m.name,
+        minors:(c.id==='point'&&m.id==='name')?D.meridians.map(function(x){return {id:x.id,name:x.short||x.name};}):null,
+        q4:availMid('q4',c,m.id),mt:availMid('mt',c,m.id)};
+    })};
+  });
+
+  var normSel=function(x){if(Array.isArray(x)){var o={};x.forEach(function(id){o[id]={};});return o;}return x||{};};
+  function setFilters(c,sel,mids){
+    F.muscle=F.level=F.gogyo=F.kotsudo=F.point=null;
+    if(c.kind==='data'&&mids.length<c.mids.length){
+      var ids=new Set(mids);
+      F[c.id]=new Set(c.mids.filter(function(m){return ids.has(m.id);}).map(function(m){return m.v!==undefined?m.v:m.id;}));
+    }
+    if(c.id==='point'&&sel&&sel.minors&&sel.minors.name&&sel.minors.name.length<D.meridians.length){F.point=new Set(sel.minors.name);}
+  }
+  function clearFilters(){F.muscle=F.level=F.gogyo=F.kotsudo=F.point=null;}
+  function midIds(c,sel,mode){
+    return ((sel&&sel.mids)||c.mids.map(function(m){return m.id;})).filter(function(id){return availMid(mode,c,id);});
+  }
+  function genOne(catId,used,sel){
+    var c=catById(catId);if(!c) return null;
+    var ids=midIds(c,sel,'q4');if(!ids.length) return null;
+    setFilters(c,sel,ids);
+    var res=null;
+    for(var t=0;t<60&&!res;t++){
+      var gens=c.kind==='data'?c.gens:c.midGens[pick(ids)],q;
+      try{q=pick(gens)();}catch(e){q=null;}
+      if(q&&!(used&&used.has(q.key))) res=q;
+    }
+    clearFilters();
+    return res;
+  }
+  function matchOne(catId,used,sel){
+    var c=catById(catId);if(!c) return null;
+    var ids=midIds(c,sel,'mt');if(!ids.length) return null;
+    setFilters(c,sel,ids);
+    var res=null;
+    for(var t=0;t<80&&!res;t++){
+      var gens=c.kind==='data'?MG[c.id]:c.midMG[pick(ids)],q;
+      try{q=pick(gens)();}catch(e){q=null;}
+      if(q&&!(used&&used.has(q.key))) res=q;
+    }
+    clearFilters();
+    return res;
+  }
+  // 選んだ大分野を1周ずつ均等に回す（8分野なら8問で全分野が1問ずつ出る）
+  function catOrder(catIds,n){var out=[];while(out.length<n)out=out.concat(shuffle(catIds));return out.slice(0,n);}
+  function activeCats(sel,mode){
+    return Object.keys(sel).filter(function(id){var c=catById(id);return c&&midIds(c,sel[id],mode).length>0;});
+  }
+  function buildGeneric(selection,n,mode,one){
+    var sel=normSel(selection),cats=activeCats(sel,mode),used=new Set(),out=[];
+    if(!cats.length) return out;
+    catOrder(cats,n).forEach(function(id){
+      var q=one(id,used,sel[id]);
+      if(!q){var alt=pick(cats);q=one(alt,used,sel[alt]);}
+      if(q){used.add(q.key);out.push(q);}
+    });
+    return out;
+  }
+  function buildSet(selection,n){return buildGeneric(selection,n,'q4',genOne);}
+  function matchSet(selection,n){return buildGeneric(selection,n,'mt',matchOne);}
+
+  // 復習時：同じ組み合わせで左右の並びだけ入れ替える
+  function matchRemix(q){
+    var sh=shuffleMatch(q.L,q.R);
+    return Object.assign({},q,{left:sh.left,right:sh.right,ans:sh.ans});
+  }
+
+  return {CATS:CATS,TREE:TREE,genOne:genOne,buildSet:buildSet,reshuffle:reshuffle,MG:MG,matchOne:matchOne,matchSet:matchSet,matchRemix:matchRemix,sim:sim};
+}
+if(typeof module!=='undefined'&&module.exports){module.exports=Q4_makeEngine;}
+
+/* ===================== 分野選択（大分野→中分野→小分野）の共通部品 ===================== */
+function Q4_esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function Q4_midLeaves(c,m){
+  return m.minors?m.minors.map(function(x){return c.id+'/'+m.id+'/'+x.id;}):[c.id+'/'+m.id];
+}
+// off（外した項目）から、出題エンジンに渡す選択内容を作る。mode: 'q4'（4択）／'mt'（線結び）
+function Q4_selection(E,off,mode){
+  var sel={};
+  E.TREE.forEach(function(c){
+    var mids=[],minors={};
+    c.mids.forEach(function(m){
+      if(!m[mode]) return;
+      if(m.minors){
+        var on=m.minors.filter(function(x){return !off.has(c.id+'/'+m.id+'/'+x.id);}).map(function(x){return x.id;});
+        if(on.length){mids.push(m.id);minors[m.id]=on;}
+      }else if(!off.has(c.id+'/'+m.id)){mids.push(m.id);}
+    });
+    if(mids.length) sel[c.id]={mids:mids,minors:minors};
+  });
+  return sel;
+}
+function Q4_allLeaves(E,mode){
+  var out=[];
+  E.TREE.forEach(function(c){c.mids.forEach(function(m){if(m[mode])out=out.concat(Q4_midLeaves(c,m));});});
+  return out;
+}
+function Q4_treeHTML(E,mode,off,open,stats,unit){
+  return E.TREE.map(function(c){
+    var mids=c.mids.filter(function(m){return m[mode];});
+    if(!mids.length) return '';
+    var all=0,on=0;
+    mids.forEach(function(m){var lv=Q4_midLeaves(c,m);all+=lv.length;on+=lv.filter(function(k){return !off.has(k);}).length;});
+    var st=on===all?'on':(on===0?'off':'part');
+    var midOn=mids.filter(function(m){return Q4_midLeaves(c,m).some(function(k){return !off.has(k);});}).length;
+    var s=stats[c.id],line=(s&&s.t)?'正答率 '+Math.round(s.c/s.t*100)+'%（'+s.c+'/'+s.t+unit+'）':'未挑戦';
+    var isOpen=!!open[c.id];
+    var chips=mids.map(function(m){
+      var lv=Q4_midLeaves(c,m),k=lv.filter(function(x){return !off.has(x);}).length;
+      return '<button type="button" class="q4-chip'+(k===lv.length?' on':(k?' part':''))+'" data-act="mid" data-cat="'+c.id+'" data-mid="'+m.id+'">'+Q4_esc(m.name)+(m.minors&&k?'<i>'+k+'/'+lv.length+'</i>':'')+'</button>';
+    }).join('');
+    var minors=mids.filter(function(m){return m.minors;}).map(function(m){
+      return '<div class="q4-minors"><div class="q4-mhead"><span>小分野：'+Q4_esc(m.name)+'の経絡</span>'+
+        '<button type="button" data-act="mall" data-cat="'+c.id+'" data-mid="'+m.id+'">すべて</button>'+
+        '<button type="button" data-act="mnone" data-cat="'+c.id+'" data-mid="'+m.id+'">解除</button></div><div class="q4-chips">'+
+        m.minors.map(function(x){return '<button type="button" class="q4-chip sm'+(off.has(c.id+'/'+m.id+'/'+x.id)?'':' on')+'" data-act="minor" data-cat="'+c.id+'" data-mid="'+m.id+'" data-minor="'+x.id+'">'+Q4_esc(x.name)+'</button>';}).join('')+
+        '</div></div>';
+    }).join('');
+    return '<div class="q4-grp st-'+st+'"><div class="q4-gh">'+
+      '<button type="button" class="q4-gck" data-act="cat" data-cat="'+c.id+'" aria-label="'+Q4_esc(c.name)+'を選択"></button>'+
+      '<button type="button" class="q4-gtx" data-act="open" data-cat="'+c.id+'"><b>'+Q4_esc(c.name)+'</b><small>'+Q4_esc(c.sub)+'</small>'+
+        '<span class="st">'+line+'　中分野 '+midOn+'/'+mids.length+'</span></button>'+
+      '<button type="button" class="q4-gex" data-act="open" data-cat="'+c.id+'">'+(isOpen?'閉じる ▴':'細かく選ぶ ▾')+'</button></div>'+
+      (isOpen?'<div class="q4-gp"><div class="q4-chips">'+chips+'</div>'+minors+'</div>':'')+'</div>';
+  }).join('');
+}
+function Q4_treeBind(box,E,mode,off,open,onChange){
+  var C={};E.TREE.forEach(function(c){C[c.id]=c;});
+  box.onclick=function(ev){
+    var b=ev.target.closest('[data-act]');
+    if(!b||!box.contains(b)) return;
+    var act=b.dataset.act,c=C[b.dataset.cat];if(!c) return;
+    var m=c.mids.filter(function(x){return x.id===b.dataset.mid;})[0];
+    var allOn=function(lv){return lv.every(function(k){return !off.has(k);});};
+    var set=function(lv,on){lv.forEach(function(k){if(on)off.delete(k);else off.add(k);});};
+    if(act==='open'){open[c.id]=!open[c.id];}
+    else if(act==='cat'){
+      var lv=[];c.mids.filter(function(x){return x[mode];}).forEach(function(x){lv=lv.concat(Q4_midLeaves(c,x));});
+      set(lv,!allOn(lv));
+    }else if(act==='mid'&&m){var l2=Q4_midLeaves(c,m);set(l2,!allOn(l2));}
+    else if(act==='minor'&&m){var k=c.id+'/'+m.id+'/'+b.dataset.minor;if(off.has(k))off.delete(k);else off.add(k);}
+    else if(act==='mall'&&m){set(Q4_midLeaves(c,m),true);}
+    else if(act==='mnone'&&m){set(Q4_midLeaves(c,m),false);}
+    onChange();
+  };
+}
+
+/* ===================== 4択クイズ：画面 ===================== */
+(function(){
+  'use strict';
+  var root=document.getElementById('viewQuiz4');
+  if(!root) return;
+  var body=document.getElementById('q4Body');
+  var E;
+  try{
+    E=Q4_makeEngine({meridians:meridians,goyu:goyu,goyo:goyo,hakkai:hakkai,soshu:soshu,hasso:hasso,gego:gego,
+      muscleCats:muscleCats,MERGE_UP:MERGE_UP,levelHead:levelHead,levelChest:levelChest,levelBack:levelBack,
+      gogyoCols:gogyoCols,gogyoTables:gogyoTables,nerveData:nerveData,RYAKUGO_DATA:RYAKUGO_DATA,KOTSUDO_DATA:KOTSUDO_DATA});
+  }catch(err){
+    body.innerHTML='<p class="hint">クイズの初期化に失敗しました（'+String(err&&err.message)+'）</p>';
+    return;
+  }
+  if(typeof viewMeta!=='undefined'){
+    viewMeta.viewQuiz4={title:'4択クイズ',sub:'QUIZ',foot:'4択クイズ ／ 登録データから自動出題'};
+  }
+
+  var KEY_STATS='anki-q4-stats',KEY_PREF='anki-q4-pref';
+  function load(k,d){try{var v=JSON.parse(localStorage.getItem(k));return v||d;}catch(e){return d;}}
+  function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+  var catName={};E.CATS.forEach(function(c){catName[c.id]=c.name;});
+  var stats=load(KEY_STATS,{});
+  var pref=load(KEY_PREF,{off:[],n:10});
+  var S={off:new Set(pref.off||[]),open:{},n:[10,20,30].indexOf(pref.n)>=0?pref.n:10,
+         qs:[],i:0,res:[],mode:'setup',answered:false,retry:false};
+  function savePref(){save(KEY_PREF,{off:Array.from(S.off),n:S.n});}
+
+  /* ---------- 分野・問題数の選択画面（大分野→中分野→小分野） ---------- */
+  function renderSetup(){
+    S.mode='setup';
+    var selection=Q4_selection(E,S.off,'q4'),ok=Object.keys(selection).length>0;
+    var ns=[10,20,30].map(function(n){return '<button data-n="'+n+'"'+(S.n===n?' class="on"':'')+'>'+n+'問</button>';}).join('');
+    body.innerHTML=
+      '<p class="hint">左のチェックで<b>大分野</b>を選び、「細かく選ぶ」で<b>中分野</b>（経穴の名前は経絡ごとの小分野も）を選べます。選択肢は、答えに似たものが優先して並びます</p>'+
+      '<div class="q4-tools"><button class="ryaku-allbtn" id="q4All">すべて選択</button><button class="ryaku-allbtn" id="q4None">すべて解除</button></div>'+
+      '<div class="q4-tree" id="q4Tree">'+Q4_treeHTML(E,'q4',S.off,S.open,stats,'問')+'</div>'+
+      '<div class="q4-nrow"><span>問題数</span>'+ns+'</div>'+
+      '<button class="q4-start" id="q4Start"'+(ok?'':' disabled')+'>'+(ok?'スタート':'分野を選んでください')+'</button>'+
+      '<p class="q4-note">正答率はこの端末に保存されます　<button class="q4-link" id="q4Reset">成績をリセット</button></p>';
+    Q4_treeBind(document.getElementById('q4Tree'),E,'q4',S.off,S.open,function(){savePref();renderSetup();});
+    body.querySelectorAll('.q4-nrow button').forEach(function(b){b.onclick=function(){S.n=+b.dataset.n;savePref();renderSetup();};});
+    document.getElementById('q4All').onclick=function(){S.off.clear();savePref();renderSetup();};
+    document.getElementById('q4None').onclick=function(){Q4_allLeaves(E,'q4').forEach(function(k){S.off.add(k);});savePref();renderSetup();};
+    document.getElementById('q4Start').onclick=function(){start(false);};
+    var rs=document.getElementById('q4Reset'),armed=false,timer=null;
+    rs.onclick=function(){
+      if(!armed){armed=true;rs.textContent='もう一度タップで消去';timer=setTimeout(function(){armed=false;rs.textContent='成績をリセット';},3000);}
+      else{clearTimeout(timer);stats={};save(KEY_STATS,stats);renderSetup();}
+    };
+  }
+
+  function start(){
+    var qs=E.buildSet(Q4_selection(E,S.off,'q4'),S.n);
+    if(!qs.length){body.insertAdjacentHTML('beforeend','<p class="hint">問題を作成できませんでした。分野を変えてお試しください。</p>');return;}
+    S.qs=qs;S.i=0;S.res=[];S.retry=false;renderQuestion();
+  }
+
+  /* ---------- 出題画面 ---------- */
+  function renderQuestion(){
+    S.mode='play';S.answered=false;
+    var q=S.qs[S.i],total=S.qs.length;
+    body.innerHTML=
+      '<div class="q4-head"><span class="q4-prog">'+(S.i+1)+' / '+total+'</span>'+
+        '<span class="q4-tag'+(S.retry?' retry':'')+'">'+esc(catName[q.cat]||'')+(S.retry?'・復習':'')+'</span>'+
+        '<button class="q4-quit" id="q4Quit">中断</button></div>'+
+      '<div class="q4-bar"><i style="width:'+Math.round(S.i/total*100)+'%"></i></div>'+
+      '<div class="q4-q">'+esc(q.q)+'</div>'+
+      (q.multi?'<div class="q4-multi">※正解になりうるものが複数ある設問です。選択肢の中で正しいものは1つだけです。</div>':'')+
+      '<div class="q4-opts">'+q.opts.map(function(o,k){
+        return '<button class="q4-opt" data-k="'+k+'"><span class="no">'+(k+1)+'</span><span class="tx">'+esc(o)+'</span></button>';
+      }).join('')+'</div>'+
+      '<div class="q4-fb" id="q4Fb"></div>';
+    body.querySelectorAll('.q4-opt').forEach(function(b){b.onclick=function(){answer(+b.dataset.k);};});
+    document.getElementById('q4Quit').onclick=function(){if(S.res.length)renderResult(true);else renderSetup();};
+    window.scrollTo(0,0);
+  }
+
+  function answer(k){
+    if(S.answered) return;
+    S.answered=true;
+    var q=S.qs[S.i],ok=(k===q.ai),last=(S.i===S.qs.length-1);
+    S.res.push({q:q,pick:k,ok:ok});
+    if(!S.retry){
+      var st=stats[q.cat]||(stats[q.cat]={c:0,t:0});
+      st.t++;if(ok)st.c++;
+      save(KEY_STATS,stats);
+    }
+    body.querySelectorAll('.q4-opt').forEach(function(b){
+      var i=+b.dataset.k;
+      if(i===q.ai)b.classList.add('ok');
+      else if(i===k)b.classList.add('ng');
+      else b.classList.add('dim');
+      b.disabled=true;
+    });
+    var fb=document.getElementById('q4Fb');
+    fb.innerHTML='<div class="q4-verdict '+(ok?'ok':'ng')+'">'+(ok?'○ 正解':'× 不正解（正解は '+(q.ai+1)+'）')+'</div>'+
+      (q.exp?'<div class="q4-exp">'+esc(q.exp)+'</div>':'')+
+      '<button class="q4-next" id="q4Next">'+(last?'結果を見る':'次の問題へ')+'</button>';
+    document.getElementById('q4Next').onclick=next;
+    var t=fb.getBoundingClientRect();
+    if(t.bottom>window.innerHeight){fb.scrollIntoView({block:'end',behavior:'smooth'});}
+  }
+  function next(){
+    if(S.i<S.qs.length-1){S.i++;renderQuestion();}else{renderResult(false);}
+  }
+
+  /* ---------- 結果画面 ---------- */
+  function renderResult(partial){
+    S.mode='result';
+    var n=S.res.length,c=S.res.filter(function(r){return r.ok;}).length,pct=n?Math.round(c/n*100):0;
+    var by={};
+    S.res.forEach(function(r){var k=r.q.cat;by[k]=by[k]||{c:0,t:0};by[k].t++;if(r.ok)by[k].c++;});
+    var brk=Object.keys(by).map(function(k){
+      var p=Math.round(by[k].c/by[k].t*100);
+      return '<div class="q4-brk"><span class="nm">'+esc(catName[k])+'</span><span class="bar"><i style="width:'+p+'%"></i></span><span class="pc">'+by[k].c+'/'+by[k].t+'</span></div>';
+    }).join('');
+    var wrong=S.res.filter(function(r){return !r.ok;});
+    var wl=wrong.map(function(r){
+      return '<details class="q4-wr"><summary>'+esc(r.q.q.split('\n')[0])+'</summary>'+
+        '<div class="q4-wr-b"><div>あなたの答え：<b class="ng">'+esc(r.q.opts[r.pick])+'</b></div>'+
+        '<div>正解：<b class="ok">'+esc(r.q.opts[r.q.ai])+'</b></div>'+
+        (r.q.exp?'<div class="q4-exp">'+esc(r.q.exp)+'</div>':'')+'</div></details>';
+    }).join('');
+    body.innerHTML=
+      '<div class="q4-score"><span>'+(S.retry?'復習の結果':'結果')+(partial?'（中断）':'')+'</span><b>'+c+' / '+n+'</b><span>正答率 '+pct+'%</span></div>'+
+      '<div class="q4-brkbox">'+brk+'</div>'+
+      (wrong.length?'<p class="q4-sec">間違えた問題（タップで解説）</p>'+wl:'<p class="q4-sec">全問正解です</p>')+
+      '<div class="q4-btns">'+
+        (wrong.length?'<button class="q4-next" id="q4Retry">間違えた問題だけやり直す（'+wrong.length+'問）</button>':'')+
+        '<button class="q4-next alt" id="q4Again">同じ条件でもう一度</button>'+
+        '<button class="q4-next alt" id="q4Back">分野を選び直す</button>'+
+      '</div>';
+    var rt=document.getElementById('q4Retry');
+    if(rt)rt.onclick=function(){
+      S.qs=wrong.map(function(r){return E.reshuffle(r.q);});S.i=0;S.res=[];S.retry=true;renderQuestion();
+    };
+    document.getElementById('q4Again').onclick=function(){start();};
+    document.getElementById('q4Back').onclick=renderSetup;
+    window.scrollTo(0,0);
+  }
+
+  /* ---------- キーボード操作（PC用）：1〜4で解答、Enterで次へ ---------- */
+  document.addEventListener('keydown',function(e){
+    if(!root.classList.contains('active')||S.mode!=='play') return;
+    var t=e.target&&e.target.tagName;if(t==='INPUT'||t==='TEXTAREA') return;
+    if(!S.answered&&/^[1-4]$/.test(e.key)){answer(+e.key-1);}
+    else if(S.answered&&(e.key==='Enter'||e.key===' '||e.key==='ArrowRight')){e.preventDefault();next();}
+  });
+
+  // ホームのカードから開いたとき（出題中でなければ）選択画面を最新の成績で描き直す
+  var card=document.querySelector('.home-card[data-go="viewQuiz4"]');
+  if(card)card.addEventListener('click',function(){if(S.mode!=='play')renderSetup();});
+
+  renderSetup();
+})();
+
+/* ===================== 線結び問題：画面 ===================== */
+(function(){
+  'use strict';
+  var root=document.getElementById('viewMatch');
+  if(!root) return;
+  var body=document.getElementById('mBody');
+  var E;
+  try{
+    E=Q4_makeEngine({meridians:meridians,goyu:goyu,goyo:goyo,hakkai:hakkai,soshu:soshu,hasso:hasso,gego:gego,
+      muscleCats:muscleCats,MERGE_UP:MERGE_UP,levelHead:levelHead,levelChest:levelChest,levelBack:levelBack,
+      gogyoCols:gogyoCols,gogyoTables:gogyoTables,nerveData:nerveData,RYAKUGO_DATA:RYAKUGO_DATA,KOTSUDO_DATA:KOTSUDO_DATA});
+  }catch(err){
+    body.innerHTML='<p class="hint">線結び問題の初期化に失敗しました（'+String(err&&err.message)+'）</p>';
+    return;
+  }
+  if(typeof viewMeta!=='undefined'){
+    viewMeta.viewMatch={title:'線結び問題',sub:'MATCH',foot:'線結び問題 ／ 登録データから自動出題'};
+  }
+  var KEY_STATS='anki-m-stats',KEY_PREF='anki-m-pref';
+  function load(k,d){try{var v=JSON.parse(localStorage.getItem(k));return v||d;}catch(e){return d;}}
+  function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+  var catName={};E.CATS.forEach(function(c){catName[c.id]=c.name;});
+  var stats=load(KEY_STATS,{}),pref=load(KEY_PREF,{off:[],n:5});
+  var S={off:new Set(pref.off||[]),open:{},n:[3,5,10].indexOf(pref.n)>=0?pref.n:5,
+         qs:[],i:0,res:[],mode:'setup',checked:false,retry:false,conn:[],cur:null};
+  function savePref(){save(KEY_PREF,{off:Array.from(S.off),n:S.n});}
+
+  /* ---------- 選択画面（大分野→中分野→小分野） ---------- */
+  function renderSetup(){
+    S.mode='setup';
+    var selection=Q4_selection(E,S.off,'mt'),ok=Object.keys(selection).length>0;
+    var ns=[3,5,10].map(function(n){return '<button data-n="'+n+'"'+(S.n===n?' class="on"':'')+'>'+n+'問</button>';}).join('');
+    body.innerHTML=
+      '<p class="hint">左右の項目を<b>線で結ぶ</b>問題です（タップ→タップ、またはなぞって結べます）。<b>大分野</b>のチェックと、「細かく選ぶ」の<b>中分野</b>で出題範囲を選べます。1問は3〜5組です。4択クイズと同じ分野構成です</p>'+
+      '<div class="q4-tools"><button class="ryaku-allbtn" id="mAll">すべて選択</button><button class="ryaku-allbtn" id="mNone">すべて解除</button></div>'+
+      '<div class="q4-tree" id="mTree">'+Q4_treeHTML(E,'mt',S.off,S.open,stats,'組')+'</div>'+
+      '<div class="q4-nrow"><span>問題数</span>'+ns+'</div>'+
+      '<button class="q4-start" id="mStart"'+(ok?'':' disabled')+'>'+(ok?'スタート':'分野を選んでください')+'</button>'+
+      '<p class="q4-note">正答率はこの端末に保存されます　<button class="q4-link" id="mReset0">成績をリセット</button></p>';
+    Q4_treeBind(document.getElementById('mTree'),E,'mt',S.off,S.open,function(){savePref();renderSetup();});
+    body.querySelectorAll('.q4-nrow button').forEach(function(b){b.onclick=function(){S.n=+b.dataset.n;savePref();renderSetup();};});
+    document.getElementById('mAll').onclick=function(){S.off.clear();savePref();renderSetup();};
+    document.getElementById('mNone').onclick=function(){Q4_allLeaves(E,'mt').forEach(function(k){S.off.add(k);});savePref();renderSetup();};
+    document.getElementById('mStart').onclick=function(){start();};
+    var rs=document.getElementById('mReset0'),armed=false,timer=null;
+    rs.onclick=function(){
+      if(!armed){armed=true;rs.textContent='もう一度タップで消去';timer=setTimeout(function(){armed=false;rs.textContent='成績をリセット';},3000);}
+      else{clearTimeout(timer);stats={};save(KEY_STATS,stats);renderSetup();}
+    };
+  }
+  function start(){
+    var qs=E.matchSet(Q4_selection(E,S.off,'mt'),S.n);
+    if(!qs.length){body.insertAdjacentHTML('beforeend','<p class="hint">問題を作成できませんでした。分野を変えてお試しください。</p>');return;}
+    S.qs=qs;S.i=0;S.res=[];S.retry=false;renderQ();
+  }
+
+  /* ---------- 出題画面 ---------- */
+  var ro=(typeof ResizeObserver!=='undefined')?new ResizeObserver(function(){draw();}):null;
+  function renderQ(){
+    S.mode='play';S.checked=false;S.cur=null;
+    var q=S.qs[S.i],n=q.left.length,total=S.qs.length;
+    S.conn=[];for(var k=0;k<n;k++)S.conn.push(-1);
+    var li=q.left.map(function(t,i){return '<button type="button" class="m-item" data-side="L" data-i="'+i+'">'+esc(t)+'</button>';}).join('');
+    var ri=q.right.map(function(t,i){return '<button type="button" class="m-item" data-side="R" data-i="'+i+'">'+esc(t)+'</button>';}).join('');
+    body.innerHTML=
+      '<div class="q4-head"><span class="q4-prog">'+(S.i+1)+' / '+total+'</span>'+
+        '<span class="q4-tag'+(S.retry?' retry':'')+'">'+esc(catName[q.cat]||'')+(S.retry?'・復習':'')+'</span>'+
+        '<button class="q4-quit" id="mQuit">中断</button></div>'+
+      '<div class="q4-bar"><i style="width:'+Math.round(S.i/total*100)+'%"></i></div>'+
+      '<div class="q4-q">'+esc(q.title)+(q.note?'<small class="m-note">'+esc(q.note)+'</small>':'')+'</div>'+
+      '<div class="m-hint">左右の項目をタップして結びます（なぞってもOK）。線の付いた項目をもう一度タップすると外せます。</div>'+
+      '<div class="m-board" id="mBoard"><svg class="m-svg" id="mSvg" xmlns="http://www.w3.org/2000/svg"></svg>'+
+        '<div class="m-col">'+li+'</div><div></div><div class="m-col">'+ri+'</div></div>'+
+      '<div class="m-actions"><button class="q4-next alt" id="mClear">線をすべて消す</button><button class="q4-next" id="mCheck" disabled>答え合わせ</button></div>'+
+      '<div class="q4-fb" id="mFb"></div>';
+    document.getElementById('mQuit').onclick=function(){if(S.res.length)renderResult(true);else renderSetup();};
+    document.getElementById('mClear').onclick=function(){if(S.checked)return;for(var i=0;i<S.conn.length;i++)S.conn[i]=-1;S.cur=null;draw();};
+    document.getElementById('mCheck').onclick=check;
+    var board=document.getElementById('mBoard');
+    board.addEventListener('pointerdown',onDown);
+    if(ro){ro.disconnect();ro.observe(board);}
+    window.scrollTo(0,0);
+    draw();
+    setTimeout(draw,60);
+  }
+
+  /* ---------- 線の描画 ---------- */
+  function anchor(el,br,side){
+    var r=el.getBoundingClientRect();
+    return [(side==='L'?r.right:r.left)-br.left,r.top+r.height/2-br.top];
+  }
+  function lineEl(a,b,cls){return '<line class="m-line '+cls+'" x1="'+a[0].toFixed(1)+'" y1="'+a[1].toFixed(1)+'" x2="'+b[0].toFixed(1)+'" y2="'+b[1].toFixed(1)+'"/>';}
+  function draw(){
+    var board=document.getElementById('mBoard'),svg=document.getElementById('mSvg');
+    if(!board||!svg||S.mode!=='play') return;
+    var q=S.qs[S.i],br=board.getBoundingClientRect();
+    if(!br.width) return;
+    svg.setAttribute('width',br.width);svg.setAttribute('height',br.height);
+    svg.setAttribute('viewBox','0 0 '+br.width+' '+br.height);
+    var Ls=board.querySelectorAll('.m-item[data-side="L"]'),Rs=board.querySelectorAll('.m-item[data-side="R"]');
+    var A=[],B=[];
+    Ls.forEach(function(e){A.push(anchor(e,br,'L'));});
+    Rs.forEach(function(e){B.push(anchor(e,br,'R'));});
+    var h='';
+    S.conn.forEach(function(j,i){
+      if(j<0) return;
+      h+=lineEl(A[i],B[j],S.checked?(q.ans[i]===j?'ok':'ng'):'');
+    });
+    if(S.checked){q.ans.forEach(function(j,i){if(S.conn[i]!==j)h+=lineEl(A[i],B[j],'fix');});}
+    svg.innerHTML=h;
+    var rOk={};
+    S.conn.forEach(function(j,i){if(j>=0)rOk[j]=(q.ans[i]===j);});
+    Ls.forEach(function(e,i){
+      e.classList.toggle('linked',S.conn[i]>=0&&!S.checked);
+      e.classList.toggle('sel',!!S.cur&&S.cur.side==='L'&&S.cur.idx===i);
+      e.classList.toggle('ok',S.checked&&S.conn[i]===q.ans[i]);
+      e.classList.toggle('ng',S.checked&&S.conn[i]!==q.ans[i]);
+    });
+    Rs.forEach(function(e,j){
+      var linked=(rOk[j]!==undefined);
+      e.classList.toggle('linked',linked&&!S.checked);
+      e.classList.toggle('sel',!!S.cur&&S.cur.side==='R'&&S.cur.idx===j);
+      e.classList.toggle('ok',S.checked&&rOk[j]===true);
+      e.classList.toggle('ng',S.checked&&(!linked||rOk[j]===false));
+    });
+    var all=S.conn.every(function(j){return j>=0;});
+    var cb=document.getElementById('mCheck');
+    if(cb)cb.disabled=S.checked||!all;
+  }
+
+  /* ---------- 線を結ぶ操作 ---------- */
+  function link(i,j){
+    for(var k=0;k<S.conn.length;k++){if(S.conn[k]===j)S.conn[k]=-1;}
+    S.conn[i]=j;
+  }
+  function unlink(side,idx){
+    if(side==='L'){S.conn[idx]=-1;}
+    else{for(var k=0;k<S.conn.length;k++){if(S.conn[k]===idx)S.conn[k]=-1;}}
+  }
+  function isLinked(side,idx){return side==='L'?S.conn[idx]>=0:S.conn.indexOf(idx)>=0;}
+  function tap(side,idx){
+    if(S.cur&&S.cur.side!==side){
+      if(side==='R')link(S.cur.idx,idx);else link(idx,S.cur.idx);
+      S.cur=null;
+    }else if(S.cur&&S.cur.side===side&&S.cur.idx===idx){
+      S.cur=null;
+    }else{
+      if(isLinked(side,idx))unlink(side,idx);
+      S.cur={side:side,idx:idx};
+    }
+    draw();
+  }
+  var drag=null;
+  function onDown(e){
+    if(S.checked) return;
+    var it=e.target.closest&&e.target.closest('.m-item');
+    if(!it) return;
+    drag={side:it.dataset.side,idx:+it.dataset.i,x0:e.clientX,y0:e.clientY,moved:false,el:it};
+    window.addEventListener('pointermove',onMove);
+    window.addEventListener('pointerup',onUp);
+    window.addEventListener('pointercancel',onCancel);
+  }
+  function onMove(e){
+    if(!drag) return;
+    if(!drag.moved&&Math.abs(e.clientX-drag.x0)+Math.abs(e.clientY-drag.y0)>10)drag.moved=true;
+    if(!drag.moved) return;
+    var board=document.getElementById('mBoard'),svg=document.getElementById('mSvg');
+    if(!board||!svg) return;
+    var br=board.getBoundingClientRect(),a=anchor(drag.el,br,drag.side);
+    var tmp=svg.querySelector('.tmp');
+    if(!tmp){svg.insertAdjacentHTML('beforeend','<line class="m-line tmp"/>');tmp=svg.querySelector('.tmp');}
+    tmp.setAttribute('x1',a[0]);tmp.setAttribute('y1',a[1]);
+    tmp.setAttribute('x2',e.clientX-br.left);tmp.setAttribute('y2',e.clientY-br.top);
+  }
+  function endDrag(){
+    window.removeEventListener('pointermove',onMove);
+    window.removeEventListener('pointerup',onUp);
+    window.removeEventListener('pointercancel',onCancel);
+    var svg=document.getElementById('mSvg'),tmp=svg&&svg.querySelector('.tmp');
+    if(tmp)tmp.remove();
+  }
+  function onUp(e){
+    var d=drag;drag=null;endDrag();
+    if(!d) return;
+    if(d.moved){
+      var el=document.elementFromPoint(e.clientX,e.clientY),it=el&&el.closest&&el.closest('.m-item');
+      if(it&&it.dataset.side!==d.side){
+        var j=+it.dataset.i;
+        if(d.side==='L')link(d.idx,j);else link(j,d.idx);
+      }
+      S.cur=null;draw();
+    }else{tap(d.side,d.idx);}
+  }
+  function onCancel(){drag=null;endDrag();}
+
+  /* ---------- 答え合わせ ---------- */
+  function check(){
+    if(S.checked) return;
+    var q=S.qs[S.i],n=q.left.length;
+    if(!S.conn.every(function(j){return j>=0;})) return;
+    S.checked=true;S.cur=null;
+    var c=0;S.conn.forEach(function(j,i){if(j===q.ans[i])c++;});
+    S.res.push({q:q,conn:S.conn.slice(),c:c,n:n});
+    if(!S.retry){
+      var st=stats[q.cat]||(stats[q.cat]={c:0,t:0});
+      st.t+=n;st.c+=c;save(KEY_STATS,stats);
+    }
+    var last=(S.i===S.qs.length-1);
+    var fb=document.getElementById('mFb');
+    fb.innerHTML='<div class="q4-verdict '+(c===n?'ok':'ng')+'">'+(c===n?'○ 全問正解':'× '+c+' / '+n+' 組正解')+'</div>'+
+      (c<n?'<div class="m-legend"><span class="ok">緑の実線＝正しい線</span><span class="ng">赤＝誤った線</span><span class="fix">緑の点線＝正しい線（未回答・誤答の箇所）</span></div>':'')+
+      '<div class="q4-exp">'+esc(q.exp)+'</div>'+
+      '<button class="q4-next" id="mNext">'+(last?'結果を見る':'次の問題へ')+'</button>';
+    document.getElementById('mNext').onclick=next;
+    draw();
+    if(fb.getBoundingClientRect().bottom>window.innerHeight){fb.scrollIntoView({block:'end',behavior:'smooth'});}
+  }
+  function next(){if(S.i<S.qs.length-1){S.i++;renderQ();}else{renderResult(false);}}
+
+  /* ---------- 結果画面 ---------- */
+  function renderResult(partial){
+    S.mode='result';
+    var np=0,cp=0,perfect=0;
+    S.res.forEach(function(r){np+=r.n;cp+=r.c;if(r.c===r.n)perfect++;});
+    var pct=np?Math.round(cp/np*100):0;
+    var by={};
+    S.res.forEach(function(r){var k=r.q.cat;by[k]=by[k]||{c:0,t:0};by[k].t+=r.n;by[k].c+=r.c;});
+    var brk=Object.keys(by).map(function(k){
+      var p=Math.round(by[k].c/by[k].t*100);
+      return '<div class="q4-brk"><span class="nm">'+esc(catName[k])+'</span><span class="bar"><i style="width:'+p+'%"></i></span><span class="pc">'+by[k].c+'/'+by[k].t+'</span></div>';
+    }).join('');
+    var wrong=S.res.filter(function(r){return r.c<r.n;});
+    var wl=wrong.map(function(r){
+      return '<details class="q4-wr"><summary>'+esc(r.q.title)+'（'+r.c+'/'+r.n+'組）</summary><div class="q4-wr-b"><div class="q4-exp">'+esc(r.q.exp)+'</div></div></details>';
+    }).join('');
+    body.innerHTML=
+      '<div class="q4-score"><span>'+(S.retry?'復習の結果':'結果')+(partial?'（中断）':'')+'</span><b>'+cp+' / '+np+' 組</b><span>正答率 '+pct+'%　全問正解 '+perfect+' / '+S.res.length+' 問</span></div>'+
+      '<div class="q4-brkbox">'+brk+'</div>'+
+      (wrong.length?'<p class="q4-sec">間違えた問題（タップで正解）</p>'+wl:'<p class="q4-sec">全問正解です</p>')+
+      '<div class="q4-btns">'+
+        (wrong.length?'<button class="q4-next" id="mRetry">間違えた問題だけやり直す（'+wrong.length+'問）</button>':'')+
+        '<button class="q4-next alt" id="mAgain">同じ条件でもう一度</button>'+
+        '<button class="q4-next alt" id="mBack">分野を選び直す</button></div>';
+    var rt=document.getElementById('mRetry');
+    if(rt)rt.onclick=function(){S.qs=wrong.map(function(r){return E.matchRemix(r.q);});S.i=0;S.res=[];S.retry=true;renderQ();};
+    document.getElementById('mAgain').onclick=function(){start();};
+    document.getElementById('mBack').onclick=renderSetup;
+    window.scrollTo(0,0);
+  }
+
+  window.addEventListener('resize',draw);
+  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(draw);
+  var card=document.querySelector('.home-card[data-go="viewMatch"]');
+  if(card)card.addEventListener('click',function(){if(S.mode!=='play')renderSetup();else setTimeout(draw,30);});
+  renderSetup();
 })();
 </script>
 </body>
