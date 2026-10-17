@@ -415,6 +415,21 @@ header .bar > button, .acu-scope header .bar .fs-ctrl{flex:0 0 auto}
 .acu-scope 
 .chk .chkbox{display:inline-block;width:.9em;text-align:center;flex:0 0 auto;color:var(--accent-soft);font-weight:700}
 .acu-scope .chk .chklbl{white-space:nowrap}
+/* 追加データ取り込み */
+.acu-scope .imp{margin-top:12px}
+.acu-scope .imp-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.acu-scope .imp .btn{padding:7px 13px;font-size:.84rem}
+.acu-scope .imp [hidden]{display:none !important}
+.acu-scope .imp-status{margin-top:7px;font-size:.78rem;color:var(--ink-soft);line-height:1.6;word-break:break-all}
+.acu-scope .imp-preview{margin-top:10px;padding:12px 14px;background:#fff;border:1px solid var(--line);border-radius:10px;font-size:.84rem;color:var(--ink)}
+.acu-scope .imp-title{font-weight:700;margin-bottom:8px}
+.acu-scope .imp-preview ul{margin:0 0 10px;padding-left:1.2em;line-height:1.7}
+.acu-scope .imp-preview li{margin-bottom:6px}
+.acu-scope .imp-sub{font-size:.78rem;color:var(--ink-soft);line-height:1.6}
+.acu-scope .imp-err{color:#a33}
+.acu-scope .imp-pol{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:10px;font-size:.82rem;color:var(--ink-soft)}
+.acu-scope .imp-pol label{display:inline-flex;align-items:center;gap:4px;cursor:pointer}
+.acu-scope .imp-act{display:flex;gap:8px}
 .acu-scope .suggest{margin-top:14px}
 .acu-scope .suggest .lbl{margin-bottom:7px}
 .acu-scope .chips{display:flex;flex-wrap:wrap;gap:7px}
@@ -555,6 +570,15 @@ header .bar > button, .acu-scope header .bar .fs-ctrl{flex:0 0 auto}
         <summary>出典で絞り込む</summary>
         <div class="srcgrid" id="srcgrid"></div>
       </details>
+      <div class="imp">
+        <div class="imp-row">
+          <button class="btn ghost" id="impBtn" type="button">📥 追加データを取り込む</button>
+          <input type="file" id="impFile" accept=".json,application/json" multiple hidden>
+          <button class="btn ghost" id="impDel" type="button" hidden>追加データを削除</button>
+        </div>
+        <div class="imp-status" id="impStatus">追加データ：なし</div>
+        <div class="imp-preview" id="impPreview" hidden></div>
+      </div>
     </div>
 
     <div class="suggest">
@@ -2946,6 +2970,7 @@ function displaySourceName(shortName){
 }
 const POPULAR=["頭痛","腰痛","不眠","便秘","下痢","めまい","肩こり","咳嗽","喘息","胃痛","坐骨神経痛","耳鳴り","三叉神経痛","婦人病","リウマチ"];
 let DATA=[], terms=[], mode="and", srcOn=new Set();
+let RAW_BASE=[], IMPORTS=[], PENDING=[], impVolatile=false; // 本体の生データ／取り込み済み追加データ／確認待ち／端末に保存できていない場合true
 
 const $=s=>document.querySelector(s);
 function toast(m){const t=$("#toast");if(!t)return;t.textContent=m;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),1800);}
@@ -3006,17 +3031,29 @@ function fullSourceName(shortName){
 }
 // 出典の列順（CSVの列順）。取り込み時に生データのキーから確定する。
 let SOURCE_ORDER=[];
-function computeSourceOrder(rawArr){
-  const order=[], seen=new Set();
+// rawArrays: 生データ配列のリスト（本体 acupoints.json → 追加データの順）。
+// 列順は本体の順を土台に、追加データ側の新しい列を「直前の既知列の後ろ」へ差し込んで決める。
+function computeSourceOrder(rawArrays){
+  let order=[];
   SOURCE_FULL={};
-  for(const r of rawArr){
-    if(!r||typeof r!=="object") continue;
-    for(const k of Object.keys(r)){
-      if(NON_SOURCE_KEYS.has(k)) continue;
-      const name=shortSourceName(k);
-      // 正式名（カラム名）を記録。複数行で異なる場合は最初に出たものを優先。
-      if(!(name in SOURCE_FULL)) SOURCE_FULL[name]=String(k).trim();
-      if(!seen.has(name)){ seen.add(name); order.push(name); }
+  for(const rawArr of rawArrays){
+    const cols=[], seen=new Set();
+    for(const r of rawArr){
+      if(!r||typeof r!=="object") continue;
+      for(const k of Object.keys(r)){
+        if(NON_SOURCE_KEYS.has(k)) continue;
+        const name=shortSourceName(k);
+        // 正式名（カラム名）を記録。複数行で異なる場合は最初に出たものを優先。
+        if(!(name in SOURCE_FULL)) SOURCE_FULL[name]=String(k).trim();
+        if(!seen.has(name)){ seen.add(name); cols.push(name); }
+      }
+    }
+    if(!order.length){ order=cols; continue; }
+    let last=-1;
+    for(const name of cols){
+      const i=order.indexOf(name);
+      if(i>=0){ last=i; }
+      else { order.splice(last+1,0,name); last++; }
     }
   }
   SOURCE_ORDER=order;
@@ -3054,9 +3091,10 @@ async function loadData(){
     const json = await res.json();
     const arr = Array.isArray(json) ? json : (Array.isArray(json.acupoints) ? json.acupoints : null);
     if(!arr || arr.length === 0) throw new Error('データが空です');
-    computeSourceOrder(arr);
-    DATA = arr.map(normalizeRecord).filter(Boolean);
-    buildSources();
+    RAW_BASE = arr;
+    await loadImports();   // この端末に保存済みの追加データ（失敗しても本体は表示する）
+    rebuildData();
+    updateImpStatus();
     const el = $("#ver");
     if(el) el.textContent = `経穴データ（${DATA.length}件）`;
     return true;
@@ -3071,6 +3109,194 @@ async function loadData(){
     document.body.appendChild(errDiv);
     return false;
   }
+}
+
+// ================= 追加データの取り込み =================
+//  本体（./acupoints.json）に、別JSON（出典列を増やしたもの等）を重ねて表示する機能。
+//  取り込んだJSONはこの端末のIndexedDBにだけ保存し、GitHub等のサーバーには送らない。
+//  起動のたびに「本体をfetch → 保存済みの追加データを重ねる」の順で DATA を組み立てる。
+function idbOpen(){
+  return new Promise((resolve,reject)=>{
+    if(!window.indexedDB){ reject(new Error("IndexedDB非対応")); return; }
+    const rq=indexedDB.open("acu_extra_v1",1);
+    rq.onupgradeneeded=()=>{ if(!rq.result.objectStoreNames.contains("kv")) rq.result.createObjectStore("kv"); };
+    rq.onsuccess=()=>resolve(rq.result);
+    rq.onerror=()=>reject(rq.error||new Error("IndexedDB open error"));
+    rq.onblocked=()=>reject(new Error("IndexedDB blocked"));
+  });
+}
+async function idbDo(mode,fn){
+  const db=await idbOpen();
+  try{
+    return await new Promise((resolve,reject)=>{
+      const tx=db.transaction("kv",mode);
+      const rq=fn(tx.objectStore("kv"));
+      tx.oncomplete=()=>resolve(rq&&rq.result);
+      tx.onerror=()=>reject(tx.error||new Error("IndexedDB tx error"));
+      tx.onabort=()=>reject(tx.error||new Error("IndexedDB tx aborted"));
+    });
+  }finally{ db.close(); }
+}
+const idbGet=k=>idbDo("readonly",s=>s.get(k));
+const idbSet=(k,v)=>idbDo("readwrite",s=>s.put(v,k));
+const idbDel=k=>idbDo("readwrite",s=>s.delete(k));
+
+async function loadImports(){
+  try{
+    const v=await idbGet("imports");
+    IMPORTS=Array.isArray(v)?v.filter(i=>i&&Array.isArray(i.raw)):[];
+  }catch(e){
+    console.warn("保存済み追加データの読み出しに失敗:", e); // 失敗時はメモリ上の IMPORTS を維持
+  }
+}
+
+// 照合キー：WHO表記（全角半角・空白・大小文字を吸収）。無ければ経穴名で照合。
+function normKey(s){ return String(s||"").normalize("NFKC").replace(/\s+/g,"").toUpperCase(); }
+const MERGE_FIELDS=["meridian","reading","loc1","loc2"];
+// extra を target（正規化済みレコード配列）へ統合する。target は破壊的に更新。
+//  重複する項目は常に既存（GitHub上の acupoints.json）を優先し、既存に無い項目・出典・経穴だけ追加データから補う。
+//  policy "keep"=既存を維持（アプリはこれのみ使用）／"extra"=追加データで更新（未使用）。空の値で上書きはしない。
+function mergeData(target, extra, policy){
+  const st={matched:0,added:0,changed:0,filled:0,srcAdded:0};
+  const byWho=new Map(), byName=new Map();
+  for(const p of target){
+    if(p.who) byWho.set(normKey(p.who),p);
+    if(p.name) byName.set(String(p.name).trim(),p);
+  }
+  for(const e of extra){
+    const t=(e.who&&byWho.get(normKey(e.who))) || (e.name&&byName.get(String(e.name).trim())) || null;
+    if(!t){
+      const c=JSON.parse(JSON.stringify(e));
+      target.push(c);
+      if(c.who) byWho.set(normKey(c.who),c);
+      if(c.name) byName.set(String(c.name).trim(),c);
+      st.added++; continue;
+    }
+    st.matched++;
+    for(const f of MERGE_FIELDS){
+      const v=(e[f]||"").trim(); if(!v) continue;
+      const cur=(t[f]||"").trim();
+      if(!cur){ t[f]=v; st.filled++; }
+      else if(cur!==v){ st.changed++; if(policy==="extra") t[f]=v; }
+    }
+    for(const [s,v] of Object.entries(e.sources||{})){
+      const cur=t.sources[s];
+      if(cur==null||cur===""){ t.sources[s]=v; st.srcAdded++; }
+      else if(String(cur).trim()!==String(v).trim()){ st.changed++; if(policy==="extra") t.sources[s]=v; }
+    }
+  }
+  return st;
+}
+// 本体 + 取り込み済み追加データ から DATA / 出典一覧を組み立て直す
+function rebuildData(){
+  computeSourceOrder([RAW_BASE].concat(IMPORTS.map(i=>i.raw)));
+  const data=RAW_BASE.map(normalizeRecord).filter(Boolean);
+  for(const imp of IMPORTS){
+    try{ mergeData(data, imp.raw.map(normalizeRecord).filter(p=>p&&(p.who||p.name)), "keep"); }
+    catch(e){ console.warn("追加データの統合に失敗:", imp.name, e); }
+  }
+  // 各レコードの出典を列順（SOURCE_ORDER）に並べ直す
+  for(const p of data){
+    const o={}, cur=p.sources||{};
+    for(const s of SOURCE_ORDER) if(s in cur) o[s]=cur[s];
+    for(const s of Object.keys(cur)) if(!(s in o)) o[s]=cur[s];
+    p.sources=o;
+  }
+  DATA=data;
+  buildSources();
+}
+function updateImpStatus(){
+  const st=$("#impStatus"), del=$("#impDel"); if(!st||!del) return;
+  if(!IMPORTS.length){ st.textContent="追加データ：なし（acupoints.json のみ）"; del.hidden=true; return; }
+  st.textContent="追加データ："+IMPORTS.map(i=>`${i.name}（${i.count}件・${new Date(i.savedAt).toLocaleDateString("ja-JP")}）`).join("、")
+    +(impVolatile?"　※この端末には保存できていません（再読み込みで元に戻ります）":"　※この端末に保存済み");
+  del.hidden=false;
+}
+function refreshAfterImport(){
+  renderSrc(); renderMer(); run(); runRev(); saveState(); updateImpStatus();
+}
+function closeImpPreview(){
+  const b=$("#impPreview"); if(!b) return;
+  b.hidden=true; b.innerHTML=""; PENDING=[];
+}
+async function onImpFiles(files){
+  const list=Array.from(files||[]);
+  if(!list.length) return;
+  const items=[], errs=[];
+  for(const f of list){
+    try{
+      const text=(await f.text()).replace(/^\uFEFF/,"");
+      let json;
+      try{ json=JSON.parse(text); }catch(_){ throw new Error("JSONとして読み取れません"); }
+      const arr=Array.isArray(json)?json:(json&&Array.isArray(json.acupoints)?json.acupoints:null);
+      if(!arr||!arr.length) throw new Error("経穴データの配列が見つかりません");
+      const ex=arr.map(normalizeRecord).filter(p=>p&&(p.who||p.name));
+      if(!ex.length) throw new Error("WHO表記・経穴名を含むデータがありません");
+      items.push({name:f.name,raw:arr,ex});
+    }catch(e){ errs.push({name:f.name,msg:e.message||String(e)}); }
+  }
+  showImpPreview(items,errs);
+}
+function showImpPreview(items,errs){
+  PENDING=items;
+  const box=$("#impPreview");
+  const errHtml=errs.length?`<ul class="imp-err">${errs.map(e=>`<li>${esc(e.name)}：${esc(e.msg)}</li>`).join("")}</ul>`:"";
+  if(!items.length){
+    box.innerHTML=`<div class="imp-title imp-err">取り込めるファイルがありませんでした</div>${errHtml}<div class="imp-act"><button class="btn ghost" id="impCancel" type="button">閉じる</button></div>`;
+    box.hidden=false; $("#impCancel").onclick=closeImpPreview; return;
+  }
+  // 現在のデータに試験的に重ねて、件数・差分を数える（実データは変更しない）
+  const trial=JSON.parse(JSON.stringify(DATA));
+  const known=new Set(SOURCES);
+  const lis=items.map(it=>{
+    const st=mergeData(trial,it.ex,"keep");
+    const newSrc=[];
+    for(const p of it.ex) for(const s of Object.keys(p.sources||{})) if(!known.has(s)){ known.add(s); newSrc.push(s); }
+    return `<li><b>${esc(it.name)}</b>：${it.ex.length}件（既存と一致 ${st.matched}穴／新規 ${st.added}穴）`
+      +(newSrc.length?`<div class="imp-sub">追加される出典 ${newSrc.length}件：${esc(newSrc.map(displaySourceName).join("、"))}</div>`:"")
+      +(st.srcAdded?`<div class="imp-sub">新たに加わる出典本文 ${st.srcAdded}件</div>`:"")
+      +(st.changed?`<div class="imp-sub">GitHub上と重複して内容が異なる項目 ${st.changed}件（GitHub上のデータを優先し、追加データ側は使いません）</div>`:"")
+      +(st.matched===0?`<div class="imp-sub imp-err">既存の経穴と一致するものがありません。ファイルが正しいか確認してください。</div>`:"")
+      +`</li>`;
+  }).join("");
+  box.innerHTML=`<div class="imp-title">取り込み内容の確認</div><ul>${lis}</ul>${errHtml}`
+    +`<div class="imp-sub" style="margin-bottom:10px">重複する部分はGitHub上のデータを優先し、重複しない部分（新しい出典・経穴）を追加します。取り込み後はこの端末に保存され、再起動しても残ります。</div>`
+    +`<div class="imp-act"><button class="btn" id="impOk" type="button">取り込む</button><button class="btn ghost" id="impCancel" type="button">キャンセル</button></div>`;
+  box.hidden=false;
+  $("#impCancel").onclick=closeImpPreview;
+  $("#impOk").onclick=commitImp;
+  if(box.scrollIntoView) box.scrollIntoView({block:"nearest"});
+}
+async function commitImp(){
+  const ok=$("#impOk"); if(ok) ok.disabled=true;
+  const before=new Set(SOURCES);
+  const now=Date.now();
+  for(const it of PENDING){
+    IMPORTS=IMPORTS.filter(i=>i.name!==it.name); // 同名ファイルの再取り込みは置き換え
+    IMPORTS.push({name:it.name,savedAt:now,count:it.ex.length,policy:"keep",raw:it.raw});
+  }
+  rebuildData();
+  // 新しく加わった出典は、絞り込みで最初から選択状態にする
+  SOURCES.filter(s=>!before.has(s)).forEach(s=>srcOn.add(s));
+  try{
+    await idbSet("imports",IMPORTS);
+    impVolatile=false;
+    try{ if(navigator.storage&&navigator.storage.persist) navigator.storage.persist(); }catch(_){}
+  }catch(e){
+    impVolatile=true;
+    console.warn("追加データの保存に失敗:", e);
+  }
+  closeImpPreview();
+  refreshAfterImport();
+  toast(impVolatile?"取り込みました（この端末には保存できませんでした）":`追加データを取り込みました（${DATA.length}穴）`);
+}
+async function deleteImports(){
+  if(!confirm("取り込んだ追加データをすべて削除し、acupoints.json だけの状態に戻します。よろしいですか？")) return;
+  IMPORTS=[]; impVolatile=false;
+  try{ await idbDel("imports"); }catch(e){ console.warn("追加データの削除に失敗:", e); }
+  rebuildData();
+  refreshAfterImport();
+  toast("追加データを削除しました");
 }
 
 function renderTerms(){
@@ -3241,7 +3467,13 @@ const TTL={fwd:["主治症から経穴検索","SYMPTOM &nbsp;→&nbsp; ACUPOINT 
   });
 })();
 
-// 取り込みボタンは廃止（起動時に自動fetch）
+// 追加データ取り込みボタン
+$("#impBtn").onclick=()=>$("#impFile").click();
+$("#impFile").onchange=e=>{
+  const input=e.target;
+  onImpFiles(input.files).finally(()=>{ input.value=""; });
+};
+$("#impDel").onclick=deleteImports;
 
 async function acuInit(){
   loadState();
