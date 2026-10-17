@@ -393,6 +393,10 @@
         <div class="desc">除外設定した問題</div>
       </button>
     </div>
+    <button class="menu-btn" onclick="openReader()" style="margin-top: 10px;">
+      <span class="icon">📘</span><span class="label">読み物</span>
+      <div class="desc">科目別の学習参考書（解説・重要語句の表）を読む</div>
+    </button>
   </div>
 
   <!-- メモ一覧画面 -->
@@ -929,6 +933,24 @@
       <button onclick="closeManual()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-size: 14px; cursor: pointer;">✕ 閉じる</button>
     </div>
     <iframe id="manual-frame" src="" style="flex: 1; border: none; width: 100%;" title="使用説明書"></iframe>
+  </div>
+</div>
+
+<!-- 読み物モーダル -->
+<div class="modal-bg" id="reader-modal" style="padding: 0; align-items: stretch;">
+  <div style="background: white; width: 100%; max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; height: 100%;">
+    <div style="display: flex; align-items: center; gap: 10px; padding: 14px 16px; background: #2c5f7c; color: white; flex-shrink: 0;">
+      <span style="font-size: 16px; font-weight: 600; flex: 1;">📘 読み物</span>
+      <a href="./yomimono.html" target="_blank" rel="noopener" style="color: white; font-size: 12px; text-decoration: underline; white-space: nowrap;">別タブで開く</a>
+      <button onclick="closeReader()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-size: 14px; cursor: pointer;">✕ 閉じる</button>
+    </div>
+    <div id="reader-offline" style="display: none; flex: 1; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 32px; color: #2c3e50;">
+      <div style="font-size: 44px; margin-bottom: 12px;">📡</div>
+      <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">オンラインで接続してください</div>
+      <div style="font-size: 13px; color: #7a8a99; line-height: 1.7; margin-bottom: 16px;">読み物はオンライン専用です（端末には保存されません）。<br>接続を確認してから、もう一度お試しください。</div>
+      <button onclick="openReader()" style="background: #2c5f7c; color: white; border: none; padding: 10px 22px; border-radius: 8px; font-size: 14px; cursor: pointer;">再読み込み</button>
+    </div>
+    <iframe id="reader-frame" src="" style="flex: 1; border: none; width: 100%;" title="読み物"></iframe>
   </div>
 </div>
 
@@ -3581,6 +3603,37 @@ function openManual() {
     frame.src = './manual.html';
   }
   modal.classList.add('show');
+}
+
+async function openReader() {
+  const modal = document.getElementById('reader-modal');
+  const frame = document.getElementById('reader-frame');
+  const off = document.getElementById('reader-offline');
+  modal.classList.add('show');
+  // オンライン専用：開くたびに接続を確認（キャッシュは使わない）
+  let ok = navigator.onLine !== false;
+  if (ok) {
+    try {
+      const res = await fetch('./yomimono.html?_=' + Date.now(), { method: 'HEAD', cache: 'no-store' });
+      ok = res.ok;
+    } catch (e) { ok = false; }
+  }
+  if (!ok) {
+    frame.style.display = 'none';
+    off.style.display = 'flex';
+    return;
+  }
+  off.style.display = 'none';
+  frame.style.display = '';
+  // このセッションで未読込のときだけ、時刻付きURLで最新版を取得（端末には保存しない）
+  if (frame.dataset.loaded !== '1') {
+    frame.src = './yomimono.html?_=' + Date.now();
+    frame.dataset.loaded = '1';
+  }
+}
+
+function closeReader() {
+  document.getElementById('reader-modal').classList.remove('show');
 }
 
 function closeManual() {
