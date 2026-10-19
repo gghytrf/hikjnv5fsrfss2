@@ -337,12 +337,12 @@
     </div>
     <div class="card">
       <h2>📈 復習の進度</h2>
-      <div style="font-size:calc(13px*var(--fs));color:var(--sub);margin-bottom:12px;">忘却曲線レベルごとの問題数(数値が高いほど習得が進んでいる)</div>
+      <div style="font-size:calc(13px*var(--fs));color:var(--sub);margin-bottom:12px;">忘却曲線レベルごとの問題数(数値が高いほど習得が進んでいる)。「未出題」は一度も解いていない問題、「レベル0」は解いたが未修得(不正解でリセット)の問題です。</div>
       <div id="stats-interval-list"></div>
     </div>
     <div class="card">
       <h2>📚 科目別 学習進度</h2>
-      <div style="font-size:calc(12px*var(--fs));color:var(--sub);margin-bottom:10px;">忘却曲線レベル別の問題分布。色が右に進むほど習得が進んでいます。</div>
+      <div style="font-size:calc(12px*var(--fs));color:var(--sub);margin-bottom:10px;">忘却曲線レベル別の問題分布。灰=未出題、紫=Lv0(解答済み・未修得)。色が右に進むほど習得が進んでいます。</div>
       <div id="stats-subject-legend" style="margin-bottom:10px;"></div>
       <div id="subject-stats"><div class="empty-state">まだ記録がありません</div></div>
     </div>
@@ -442,6 +442,16 @@ let session = null;         // {queue, idx, correct, wrong, answered, mode, subj
 
 const INTERVALS = [2, 3, 7, 14, 30]; // 連続正解時の日数（Lv1→2日, Lv2→3日, Lv3→7日, Lv4→14日, Lv5→30日）
 function todayStr(){ return new Date().toISOString().slice(0,10); }
+
+// 進捗レベルの区分（0=未出題 / 1=Lv0 / 2=Lv1 … 6=Lv5）
+// 「未出題（一度も解答していない）」と「Lv0（解答済みだが未修得・不正解でリセット）」を区別する
+const LEVEL_SHORT = ['未出題','Lv0','Lv1','Lv2','Lv3','Lv4','Lv5'];
+const LEVEL_COLORS = ['#e0e0e0','#8e24aa','#f44336','#ffc107','#8bc34a','#4caf50','#2196f3'];
+const LEVEL_WEIGHTS = [0,0,20,40,60,80,100];
+function levelBucket(p){
+  if(!p) return 0; // 進捗レコードなし＝未出題
+  return 1 + Math.min(p.intervalLevel||0, 5);
+}
 
 /* ====== 進捗（忘却曲線）: IndexedDB 'progress' ストアに保存 ====== */
 function pgGetAll(){
@@ -1035,8 +1045,8 @@ function renderQuestion(){
   const yLabel = YEAR_LABELS[String(q.year)] || q.year;
   // 忘却曲線レベルのバッジ
   const p = PROGRESS[q.id];
-  const lv = p ? Math.min(p.intervalLevel||0,5) : 0;
-  const lvLabels=['未学習','Lv1','Lv2','Lv3','Lv4','Lv5'];
+  const lv = levelBucket(p);
+  const lvLabels = LEVEL_SHORT;
   meta.innerHTML =
     `<span class="badge ${examCls}">${examLabel}</span>`+
     `<span class="badge subject">${q.subject}</span>`+
@@ -1123,14 +1133,14 @@ function refreshStats(){
   document.getElementById('all-mastered').textContent = mastered;
   document.getElementById('all-due').textContent = due;
 
-  const levelColors=['#e0e0e0','#f44336','#ffc107','#8bc34a','#4caf50','#2196f3'];
-  const levelLabels=['未学習(レベル0)','レベル1(2日後)','レベル2(3日後)','レベル3(7日後)','レベル4(14日後)','レベル5(30日後)'];
-  // 全問をレベル別に集計（未学習=PROGRESSに無い or intervalLevel 0）
-  const counts=[0,0,0,0,0,0];
-  ALL.forEach(q=>{ const p=PROGRESS[q.id]; const lv=p?Math.min(p.intervalLevel||0,5):0; counts[lv]++; });
+  const levelColors = LEVEL_COLORS;
+  const levelLabels=['未出題(まだ解いていない)','レベル0(解答済み・未修得)','レベル1(2日後)','レベル2(3日後)','レベル3(7日後)','レベル4(14日後)','レベル5(30日後)'];
+  // 全問をレベル別に集計（未出題=PROGRESSに無い / Lv0=解答済みでintervalLevel 0）
+  const counts=[0,0,0,0,0,0,0];
+  ALL.forEach(q=>{ counts[levelBucket(PROGRESS[q.id])]++; });
   const maxc = Math.max(1, ...counts);
   let il='';
-  for(let i=0;i<6;i++){
+  for(let i=0;i<7;i++){
     const pct = Math.round(counts[i]/maxc*100);
     il += `<div class="interval-row"><div class="il-lbl">${levelLabels[i]}</div>`+
           `<div class="il-bar"><i style="width:${pct}%;background:${levelColors[i]};"></i></div>`+
@@ -1139,7 +1149,7 @@ function refreshStats(){
   document.getElementById('stats-interval-list').innerHTML = il;
 
   // 凡例
-  const shortLabels=['未学習','Lv1','Lv2','Lv3','Lv4','Lv5'];
+  const shortLabels = LEVEL_SHORT;
   let legend='<div style="display:flex;flex-wrap:wrap;gap:10px;font-size:calc(11px*var(--fs));color:#555;">';
   shortLabels.forEach((lbl,i)=>{ legend+=`<span style="display:inline-flex;align-items:center;gap:3px;"><span style="display:inline-block;width:10px;height:10px;background:${levelColors[i]};border-radius:2px;"></span>${lbl}</span>`; });
   legend+='</div>';
@@ -1148,11 +1158,11 @@ function refreshStats(){
   // 科目別 学習進度（レベル別積み上げ）
   const subjStats={};
   ALL.forEach(q=>{
-    if(!subjStats[q.subject]) subjStats[q.subject]={ totalQ:0, levelCounts:[0,0,0,0,0,0] };
-    const p=PROGRESS[q.id]; const lv=p?Math.min(p.intervalLevel||0,5):0;
+    if(!subjStats[q.subject]) subjStats[q.subject]={ totalQ:0, levelCounts:[0,0,0,0,0,0,0] };
+    const lv=levelBucket(PROGRESS[q.id]);
     subjStats[q.subject].levelCounts[lv]++; subjStats[q.subject].totalQ++;
   });
-  const weights=[0,20,40,60,80,100];
+  const weights = LEVEL_WEIGHTS;
   const box=document.getElementById('subject-stats');
   const subs=Object.keys(subjStats).sort((a,b)=>{
     const sa=subjStats[a].levelCounts.reduce((s,c,i)=>s+c*weights[i],0)/subjStats[a].totalQ;
