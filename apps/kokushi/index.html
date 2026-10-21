@@ -3389,7 +3389,7 @@ function updateHomeStats() {
   const filtered = filterByExamType(state.questions);
   document.getElementById('stat-total').textContent = filtered.length;
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateStr();
   const filteredIds = new Set(filtered.map(q => q.id));
 
   // 解答済み・復習対象ともに除外年度を考慮
@@ -3650,7 +3650,7 @@ function goStats() {
 function renderStats() {
   const filtered = filterByExamType(state.questions);
   const totalQ = filtered.length;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateStr();
 
   // 進捗データ(filterに該当するもののみ)
   const filteredIds = new Set(filtered.map(q => q.id));
@@ -3678,15 +3678,14 @@ function renderStats() {
   } else {
     const dayCount = {};
     progressList.forEach(p => {
-      if (!p.lastAnsweredAt) return;
-      const d = p.lastAnsweredAt.slice(0, 10);
-      dayCount[d] = (dayCount[d] || 0) + 1;
+      // 1問につき、解いた日ごとに1回だけ数える(同日の解き直しは加算しない)
+      getAnswerDays(p).forEach(d => { dayCount[d] = (dayCount[d] || 0) + 1; });
     });
     const days = [];
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      const key = d.toISOString().slice(0, 10);
+      const key = localDateStr(d);
       days.push({ key, count: dayCount[key] || 0, label: `${d.getMonth() + 1}/${d.getDate()}` });
     }
     const maxC = Math.max(1, ...days.map(d => d.count));
@@ -3977,8 +3976,10 @@ function reviewPriority(q, todayD) {
   const p = state.progress[q.id];
   if (!p) return -Infinity;
   const danger = p.danger ? 1000 : 0;
-  const dueD = p.nextReviewAt ? new Date(p.nextReviewAt) : todayD;
-  const overdue = Math.max(0, Math.round((todayD - dueD) / 86400000)); // 超過日数
+  // 日付だけ(ローカル0時)で比較し、時刻やタイムゾーンによる1日のずれを防ぐ
+  const _t0 = new Date(todayD.getFullYear(), todayD.getMonth(), todayD.getDate());
+  const dueD = p.nextReviewAt ? new Date(p.nextReviewAt + 'T00:00:00') : _t0;
+  const overdue = Math.max(0, Math.round((_t0 - dueD) / 86400000)); // 超過日数
   const fragile = INTERVALS.length - Math.min(p.intervalLevel || 0, INTERVALS.length);
   const importance = q.weight || 1; // 頻出・傾向問題に付与予定（未指定は1）
   return (danger + overdue * 3 + fragile) * importance;
@@ -3991,7 +3992,7 @@ function startMode(mode, subject) {
   state.skipProgressSave = false;
 
   let queue = filterByExamType(state.questions);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateStr();
 
   if (mode === 'review') {
     queue = queue.filter(q => {
@@ -4322,6 +4323,23 @@ function skipAnswer() {
   }
 }
 
+// 端末のローカル時刻での日付文字列(YYYY-MM-DD)。toISOString()はUTCなので日本時間0〜9時に前日扱いになるため使わない
+function localDateStr(d) {
+  d = d || new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+// 問題が「解いた日」として持つローカル日付の一覧(重複なし)。
+// answerDays が無い旧データは、最終解答日時(UTCのISO文字列)をローカル日付に直して1件として扱う
+function getAnswerDays(p) {
+  if (Array.isArray(p.answerDays)) return p.answerDays;
+  if (p.lastAnsweredAt) {
+    const d = new Date(p.lastAnsweredAt);
+    if (!isNaN(d)) return [localDateStr(d)];
+  }
+  return [];
+}
+
 // grade: 'easy'(自信あり正解) 'good'(あいまい正解) 'again'(不正解) 'trap'(自信あり不正解=危険)
 // 後方互換: 本試験モード等から isCorrect(真偽値)/スキップで呼ばれた場合はグレードに変換する
 async function saveProgress(qid, grade, isSkipped = false) {
@@ -4342,6 +4360,11 @@ async function saveProgress(qid, grade, isSkipped = false) {
   };
 
   cur.lastAnsweredAt = today.toISOString();
+  // その日に初めて解いたときだけ「解いた日」を追加(同じ日に何度解き直しても1回分)
+  const _todayLocal = localDateStr(today);
+  const _days = getAnswerDays(cur).slice();
+  if (!_days.includes(_todayLocal)) _days.push(_todayLocal);
+  cur.answerDays = _days.slice(-400); // 肥大化防止(約1年分)
   // 旧来の集計との互換のため lastResult は correct/incorrect/skipped のまま残し、
   // 自信度込みの詳細は lastGrade に持たせる
   cur.lastResult = isSkipped ? 'skipped'
@@ -4380,7 +4403,7 @@ async function saveProgress(qid, grade, isSkipped = false) {
 
   const next = new Date(today);
   next.setDate(next.getDate() + nextDays);
-  cur.nextReviewAt = next.toISOString().slice(0, 10);
+  cur.nextReviewAt = localDateStr(next);
 
   state.progress[qid] = cur;
   await dbPut('progress', cur);

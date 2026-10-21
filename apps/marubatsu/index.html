@@ -441,7 +441,18 @@ let dailyCount = 20;        // 今日の演習の問題数
 let session = null;         // {queue, idx, correct, wrong, answered, mode, subject}
 
 const INTERVALS = [2, 3, 7, 14, 30]; // 連続正解時の日数（Lv1→2日, Lv2→3日, Lv3→7日, Lv4→14日, Lv5→30日）
-function todayStr(){ return new Date().toISOString().slice(0,10); }
+// 端末のローカル時刻での日付文字列(YYYY-MM-DD)。toISOString()はUTCなので日本時間0〜9時に前日扱いになるため使わない
+function localDateStr(d){
+  d = d || new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function todayStr(){ return localDateStr(); }
+// 問題が「解いた日」として持つローカル日付の一覧(重複なし)。旧データは最終解答日時から1件復元する
+function getAnswerDays(p){
+  if(Array.isArray(p.answerDays)) return p.answerDays;
+  if(p.lastAnsweredAt){ const d=new Date(p.lastAnsweredAt); if(!isNaN(d)) return [localDateStr(d)]; }
+  return [];
+}
 
 // 進捗レベルの区分（0=未出題 / 1=Lv0 / 2=Lv1 … 6=Lv5）
 // 「未出題（一度も解答していない）」と「Lv0（解答済みだが未修得・不正解でリセット）」を区別する
@@ -485,17 +496,22 @@ async function saveProgress(qid, isCorrect){
   const today = new Date();
   const cur = PROGRESS[qid] || { questionId:qid, correctCount:0, incorrectCount:0, intervalLevel:0, lastResult:null, lastAnsweredAt:null, nextReviewAt:null };
   cur.lastAnsweredAt = today.toISOString();
+  // その日に初めて解いたときだけ「解いた日」を追加(同日の解き直しは1回分)
+  const _todayLocal = localDateStr(today);
+  const _days = getAnswerDays(cur).slice();
+  if(!_days.includes(_todayLocal)) _days.push(_todayLocal);
+  cur.answerDays = _days.slice(-400);
   cur.lastResult = isCorrect ? 'correct' : 'incorrect';
   if(isCorrect){
     cur.correctCount++;
     cur.intervalLevel = Math.min(cur.intervalLevel + 1, INTERVALS.length);
     const days = INTERVALS[cur.intervalLevel - 1];
     const next = new Date(today); next.setDate(next.getDate()+days);
-    cur.nextReviewAt = next.toISOString().slice(0,10);
+    cur.nextReviewAt = localDateStr(next);
   }else{
     cur.incorrectCount++;
     cur.intervalLevel = 0;
-    cur.nextReviewAt = today.toISOString().slice(0,10); // 当日中に再出題
+    cur.nextReviewAt = localDateStr(today); // 当日中に再出題
   }
   PROGRESS[qid] = cur;
   await pgPut(cur);
