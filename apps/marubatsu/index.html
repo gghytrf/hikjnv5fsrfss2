@@ -1247,7 +1247,13 @@ function mbRenderYearList(){
   // year が数値の問題から年度一覧を取得
   const yearSet = new Set();
   ALL.forEach(q=>{ if(!isNaN(Number(q.year))) yearSet.add(`${q.examType}_${Number(q.year)}`); });
-  const years = Array.from(yearSet).sort();
+  // 「試験種別」順に並べ、同じ種別の中では回数を数値で昇順にする（文字列順だと 1,10,11,…,2 になるため）
+  const years = Array.from(yearSet).sort((a,b)=>{
+    const ia=a.lastIndexOf('_'), ib=b.lastIndexOf('_');
+    const ta=a.slice(0,ia), tb=b.slice(0,ib);
+    if(ta!==tb) return ta<tb ? -1 : 1;
+    return Number(a.slice(ia+1)) - Number(b.slice(ib+1));
+  });
   if(years.length===0){
     container.innerHTML = '<div style="color:var(--sub);text-align:center;padding:16px;">年度データがありません</div>';
     return;
