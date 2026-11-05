@@ -943,7 +943,6 @@
         </div>
         <button class="btn danger" onclick="confirmReset()" style="padding: 8px 14px; font-size: 13px;">🗑️ 削除</button>
       </div>
-      <div style="font-size:12px;color:#7a8a99;margin-top:10px;line-height:1.7;">バックアップ（書き出し・復元）は、統合ホーム画面下部の「学習データのバックアップ」からまとめて行えます。</div>
     </div>
 
   </div>
@@ -1323,11 +1322,6 @@ function dbClear(store) {
 //   (例: https://script.google.com/macros/s/AKfycb.../exec)
 const SYNC_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyUuD4I3pZS9yR5iHwwTRrsKuzF5cAvuYb7Zu-QehmqRTkNAct2RGWhCmWg8ovDkvmX/exec';
 const SYNC_APP_ID = 'kokushi';
-const SYNC_INITIAL_SETTINGS_KEY = 'syncInitialDone'; // settingsストアのkey
-// full送信の「版」。この数字を上げると、全端末が次回起動時に一度だけfullを再送する。
-// 送信内容やシート側の受け取り方を変えたときに、既存端末のデータをシートへ入れ直すために使う。
-// （旧版は value:true を保存していたため、それも「版が古い」として自動的に再送対象になる）
-const SYNC_FULL_VERSION = 2;
 
 // 端末ID（UUID）：ホーム画面(index.html)側と同じキーを使い、未生成なら自分で生成する
 // （kokushiアプリを直接開いた場合や、ホーム未起動のまま使われた場合の保険）
@@ -1370,22 +1364,6 @@ function getStudentInfo() {
     }
   } catch (e) {}
   return { school, studentNo, deviceId: getOrCreateDeviceId() };
-}
-
-async function isInitialSyncDone() {
-  try {
-    const rec = await dbGet('settings', SYNC_INITIAL_SETTINGS_KEY);
-    if (!rec || !rec.value) return false;
-    // 保存されている版が現行版と一致するときだけ「送信済み」とみなす。
-    // 旧版の value:true や古い版番号の場合は false になり、起動時にfullが1回だけ再送される。
-    return rec.value === SYNC_FULL_VERSION;
-  } catch (e) {
-    return false;
-  }
-}
-
-async function markInitialSyncDone() {
-  try { await dbPut('settings', { key: SYNC_INITIAL_SETTINGS_KEY, value: SYNC_FULL_VERSION }); } catch (e) {}
 }
 
 //=========================================================
@@ -1461,7 +1439,6 @@ async function flushSyncQueue() {
           method: 'POST', mode: 'no-cors', keepalive: true,
           headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(body)
         });
-        if (rec.type === 'full') await markInitialSyncDone();
         q = removeFromSyncQueue(rec);
       } catch (e) {
         break; // オフライン等の送信失敗：ここで中断し、残りは次回の再送に回す
@@ -1475,43 +1452,15 @@ async function flushSyncQueue() {
 // オンライン復帰時に自動再送
 window.addEventListener('online', flushSyncQueue);
 
-// 初回のみ：これまでの全学習データ（進捗・メモ・出題除外）をまとめて送信
-// 呼ぶのはアプリ起動時（afterDataReady）だけ。解答やメモ操作からは呼ばない。
-let _fullSyncStarted = false; // 同一セッション内での二重送信よけ
-async function syncFullData() {
-  if (_fullSyncStarted) return;
-  _fullSyncStarted = true;
-  try {
-    const [progressList, memoList, mutedList] = await Promise.all([
-      dbGetAll('progress'), dbGetAll('memos'), dbGetAll('mutedQuestions')
-    ]);
-    const queued = enqueueSync({
-      type: 'full',
-      progress: progressList,
-      memos: memoList,
-      mutedQuestions: mutedList
-    });
-    // キューに積んだ時点で初回完了とみなす。キューはlocalStorageに残るため、
-    // オフラインでもこの後の起動・オンライン復帰時に必ず再送される（＝取りこぼしはない）。
-    // 送信完了まで待つと、その間の解答が「初回未完了」と判定されfullが何度も送られてしまう。
-    if (queued) await markInitialSyncDone();
-  } catch (e) {
-    _fullSyncStarted = false; // 失敗したら次回の起動でやり直す
-    console.error('sync(full)エラー:', e);
-  }
-}
-
-// 起動時に1回だけ呼ぶ：未送信のキューを再送し、初回なら全データを送る
+// 起動時に1回だけ呼ぶ：前回送りきれなかった未送信キューを再送する
+// （端末内の全データを送る「初回全送信」は廃止。解答・メモ・出題除外のたびに差分を送る）
 async function syncOnStartup() {
-  try {
-    if (!(await isInitialSyncDone())) await syncFullData();
-    else flushSyncQueue(); // 前回送りきれなかった分の再送
-  } catch (e) { console.error('sync(startup)エラー:', e); }
+  try { flushSyncQueue(); }
+  catch (e) { console.error('sync(startup)エラー:', e); }
 }
 
 // 通常モード（今日の演習・科目別演習・復習モード）で1問解いた直後に呼ぶ
-// full は起動時に送信済みのため、ここでは常に1問ぶんの差分だけを送る。
-// （旧版はここでfullに化けてしまい、メモ・出題除外の列が空のまま記録されていた）
+// 常に1問ぶんの差分だけを送る。
 async function syncOneAnswer(qid) {
   try {
     enqueueSync({

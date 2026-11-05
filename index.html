@@ -330,18 +330,8 @@
   </div>
 
   <div class="backup-box">
-    <div class="backup-title">学習データのバックアップ</div>
-    <div class="backup-note">国試学習の進度・メモ・出題除外・本試験セッション・設定と、〇×問題集の進度を保存・復元できます。機種変更や端末の移行にお使いください。成績分析アプリ（seiseki）から出力した学習データも、ここから取り込めます。<b>弁証の編集・カルテ・筋トレ記録には影響しません。</b>※取り込んだ問題データ自体は含まれません（移行先で各アプリから取り込み直してください）。</div>
-    <div class="backup-btns">
-      <button class="btn-backup" onclick="exportLearningBackup()">📤 学習データをバックアップ</button>
-      <button class="btn-backup" onclick="document.getElementById('restore-file').click()">📥 学習データを復元</button>
-      <input type="file" id="restore-file" accept="application/json,.json" style="display:none" onchange="importLearningBackup(event)">
-    </div>
-  </div>
-
-  <div class="backup-box">
     <div class="backup-title">弁証・カルテ等のバックアップ</div>
-    <div class="backup-note">弁証の編集・問診表・カルテ、筋トレ記録、各アプリの文字サイズ設定を保存・復元できます。<b>国試・〇×の学習履歴には影響しません。</b>学習データのバックアップとは別のファイルです。</div>
+    <div class="backup-note">弁証の編集・問診表・カルテ、筋トレ記録、各アプリの文字サイズ設定を保存・復元できます。<b>国試・〇×の学習履歴には影響しません。</b></div>
     <div class="backup-btns">
       <button class="btn-backup" onclick="exportEditsBackup()">📤 弁証・カルテ等をバックアップ</button>
       <button class="btn-backup" onclick="document.getElementById('restore-edits-file').click()">📥 弁証・カルテ等を復元</button>
@@ -351,7 +341,7 @@
 
   <div class="backup-box" id="resetBox">
     <div class="backup-title">学習データのリセット</div>
-    <div class="backup-note">国試学習・〇×問題集アプリの学習履歴（進度・メモ・出題除外・本試験セッション・設定・未送信の送信待ちデータ）と、上の個人ID（学生番号）をすべて削除します。あわせて<b>アプリのキャッシュも破棄して再読み込み</b>します（設定を初期化するため、配信ファイルも取得し直します。問題データはネットから読み直されます）。学生番号を入力し直したい場合はここからリセットしてください。<b>この操作は取り消せません。</b>必要ならリセット前に「全データをバックアップ」で保存してください。</div>
+    <div class="backup-note">国試学習・〇×問題集アプリの学習履歴（進度・メモ・出題除外・本試験セッション・設定・未送信の送信待ちデータ）と、上の個人ID（学生番号）をすべて削除します。あわせて<b>アプリのキャッシュも破棄して再読み込み</b>します（設定を初期化するため、配信ファイルも取得し直します。問題データはネットから読み直されます）。学生番号を入力し直したい場合はここからリセットしてください。<b>この操作は取り消せません。</b></div>
     <div class="backup-btns">
       <button class="btn-backup" onclick="resetStudyData()" style="color:#b4442e;border-color:#e0b3a8">🗑 学習データをリセット</button>
     </div>
@@ -376,20 +366,6 @@
 </section>
 
 <div id="toast"></div>
-
-<div id="backupPromptOverlay" style="display:none;position:fixed;inset:0;background:rgba(26,24,20,.55);z-index:10000;align-items:center;justify-content:center;padding:20px">
-  <div style="background:#fffdf8;border-radius:16px;padding:24px;max-width:380px;width:100%;box-shadow:0 8px 30px rgba(0,0,0,.3)">
-    <div style="font-family:'Shippori Mincho',serif;font-weight:700;font-size:16px;color:var(--indigo);margin-bottom:10px">バックアップはありますか？</div>
-    <div style="font-size:12.5px;color:#7a6c50;line-height:1.7;margin-bottom:14px">
-      機種変更前やリセット前に保存した<b>学習データのバックアップ</b>があれば、<b>アプリを起動する前にここで読み込んでください</b>。<br>
-      アプリを起動したあとに読み込むと、復元した学習データが集計へ正しく反映されません。
-    </div>
-    <div style="display:flex;flex-direction:column;gap:8px">
-      <button onclick="backupPromptRestore()" style="border:1px solid var(--indigo);background:var(--indigo);color:#fff;padding:11px;border-radius:9px;font:inherit;font-size:13px;font-weight:700;cursor:pointer">📥 学習データを読み込む</button>
-      <button onclick="backupPromptSkip()" style="border:1px solid var(--line);background:#fff;color:var(--indigo);padding:11px;border-radius:9px;font:inherit;font-size:13px;cursor:pointer">バックアップはない（このまま進む）</button>
-    </div>
-  </div>
-</div>
 
 <div id="studentGateOverlay" style="display:none;position:fixed;inset:0;background:rgba(26,24,20,.55);z-index:9999;align-items:center;justify-content:center;padding:20px">
   <div style="background:#fffdf8;border-radius:16px;padding:24px;max-width:360px;width:100%;box-shadow:0 8px 30px rgba(0,0,0,.3)">
@@ -725,8 +701,6 @@ function saveStudentInfo(){
     noEl.value = studentNo; // 全角で入力された場合は半角に置き換わったことが見えるようにする
     applyStudentInfoLock({school, studentNo});
     showToast('個人IDを保存しました');
-    // 初回設定の直後だけ、バックアップの読み込みを促す
-    showBackupPrompt(null);
   }catch(e){ showToast('保存に失敗しました'); }
 }
 
@@ -1032,38 +1006,9 @@ function confirmStudentGate(){
   applyStudentInfoLock({school, studentNo: val});
   document.getElementById('studentGateOverlay').style.display = 'none';
 
-  // アプリを開く前にバックアップの読み込みを促す。
-  // 先にアプリを起動してしまうと、その時点の（空の）学習データでfull送信が確定し、
-  // あとから復元しても復元分が送信されないため。
   const key = pendingAppKey, fromPop = pendingAppFromPop;
   pendingAppKey = null;
-  showBackupPrompt(() => { if(key) openApp(key, fromPop); });
-}
-
-//=========================================================
-// バックアップ読み込みの確認ポップアップ
-//=========================================================
-let _afterBackupPrompt = null;   // ポップアップを閉じたあとに実行する処理（アプリ起動など）
-let _restoreFromPrompt = false;  // ポップアップ経由の復元かどうか
-
-function showBackupPrompt(next){
-  _afterBackupPrompt = next || null;
-  const el = document.getElementById('backupPromptOverlay');
-  if(el) el.style.display = 'flex';
-}
-function closeBackupPrompt(){
-  const el = document.getElementById('backupPromptOverlay');
-  if(el) el.style.display = 'none';
-  const fn = _afterBackupPrompt;
-  _afterBackupPrompt = null;
-  _restoreFromPrompt = false;
-  if(fn) fn();
-}
-function backupPromptSkip(){ closeBackupPrompt(); }
-function backupPromptRestore(){
-  _restoreFromPrompt = true;
-  document.getElementById('restore-file').click();
-  // ファイル選択がキャンセルされた場合はポップアップを開いたままにする（importLearningBackup側で判定）
+  if(key) openApp(key, fromPop);
 }
 
 function openApp(key, fromPop){
@@ -1221,11 +1166,11 @@ if('serviceWorker' in navigator){
   });
 }
 
-// ===== バックアップ（「学習データ」と「弁証・カルテ等」は別ファイル・別の復元操作） =====
-// 各アプリは同一オリジン配下のため、ホームから localStorage と IndexedDB に直接アクセスできる。
-//   学習データ      … IndexedDB（国試・〇×の進度、メモ、出題除外、本試験セッション、設定）  type:'learning-backup'
+// ===== バックアップ（弁証・カルテ等のみ） =====
+// 学習データ（国試・〇×の進度、メモ、出題除外など）のバックアップ／復元は廃止した（スプレッドシートとの同期で代替）。
 //   弁証・カルテ等  … localStorage（弁証の編集・問診表・カルテ、筋トレ記録、文字サイズ）   type:'edits-backup'
-// 旧バージョンの type:'full-backup'（両方入り）は、どちらの復元でも「自分の担当ぶんだけ」読み込める。
+// 旧バージョンの type:'full-backup'（両方入り）は、弁証・カルテ等の復元で「その担当ぶんだけ」読み込める。
+// 旧 type:'learning-backup' は、誤って選ばれたときに案内を出すためだけに定数を残している。
 const BACKUP_TYPE_LEARNING = 'learning-backup';
 const BACKUP_TYPE_EDITS    = 'edits-backup';
 const BACKUP_TYPE_LEGACY   = 'full-backup';
@@ -1236,85 +1181,12 @@ const BACKUP_LS_KEYS = [
   // 各アプリの文字サイズ設定
   'kokushi-fs-idx','marubatsu-fs-idx','search-fs-idx','anki-fs-idx','bensho-fs-idx','karuta-fs-idx','muscle-fs-idx'
 ];
-// 学習データ（IndexedDB）
-const BACKUP_IDB = [
-  // 国試学習：進度・設定・本試験セッション・メモ・出題除外（ミュート）
-  { db:'StudyAppDB',   stores:['progress','settings','paperSessions','memos','mutedQuestions'] },
-  { db:'MarubatsuDB',  stores:['progress'] },                            // 〇×問題集：進度
-];
-function idbOpen(name){
-  return new Promise((resolve,reject)=>{ const r=indexedDB.open(name); r.onsuccess=()=>resolve(r.result); r.onerror=()=>reject(r.error); });
-}
-// 指定ストアが全て存在する状態でDBを開く（無ければバージョンを上げて作成）。keyPathはアプリと合わせる。
-const STORE_KEYPATH = { progress:'questionId', settings:'key', paperSessions:'id', memos:'questionId', mutedQuestions:'questionId', questions:'id', meta:'key', questionData:'key' };
-const DB_TARGET_VERSION = { StudyAppDB:5, MarubatsuDB:4 }; // 各アプリが使う現行バージョンに合わせる
-// 各DBが本来持つ「全ストア」。復元でDBを新規作成する場合はアプリと同じ完全な構成で作る
-// （バックアップ対象だけ作るとアプリ起動時にストア不足で不整合になるため）。
-const DB_FULL_STORES = {
-  StudyAppDB:  ['progress','settings','paperSessions','memos','mutedQuestions','questionData'],
-  MarubatsuDB: ['meta','progress','questionData'],
-};
-function idbOpenEnsure(name, stores){
-  return new Promise((resolve,reject)=>{
-    const r=indexedDB.open(name);
-    r.onsuccess=()=>{
-      const db=r.result;
-      const missing=stores.filter(s=>!db.objectStoreNames.contains(s));
-      if(missing.length===0){ resolve(db); return; }
-      // 不足ストアがある＝アプリ未起動などでDBが不完全。アプリと同じバージョン・全ストア構成で作り直す。
-      const target=Math.max(db.version, DB_TARGET_VERSION[name]||(db.version+1));
-      db.close();
-      const r2=indexedDB.open(name, target);
-      r2.onupgradeneeded=(e)=>{
-        const d=e.target.result;
-        const full=DB_FULL_STORES[name]||stores;
-        full.forEach(s=>{ if(!d.objectStoreNames.contains(s)) d.createObjectStore(s,{keyPath:STORE_KEYPATH[s]||'id'}); });
-      };
-      r2.onsuccess=()=>resolve(r2.result); r2.onerror=()=>reject(r2.error);
-    };
-    r.onerror=()=>reject(r.error);
-  });
-}
-function idbGetAll(db, store){
-  return new Promise((resolve)=>{
-    if(!db.objectStoreNames.contains(store)){ resolve([]); return; }
-    const tx=db.transaction(store,'readonly'); const r=tx.objectStore(store).getAll();
-    r.onsuccess=()=>resolve(r.result||[]); r.onerror=()=>resolve([]);
-  });
-}
-function idbPutAll(db, store, items){
-  return new Promise((resolve)=>{
-    if(!items || !items.length){ resolve(); return; }
-    if(!db.objectStoreNames.contains(store)){ resolve(); return; }
-    const tx=db.transaction(store,'readwrite'); const os=tx.objectStore(store);
-    items.forEach(it=>{ try{ os.put(it); }catch(e){} });
-    tx.oncomplete=()=>resolve(); tx.onerror=()=>resolve();
-  });
-}
-
 function downloadJson(obj, filename){
   const blob=new Blob([JSON.stringify(obj)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
   a.href=url; a.download=filename;
   document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-}
-
-// 学習データ（IndexedDB：国試・〇×の学習履歴）のバックアップ
-async function exportLearningBackup(){
-  try{
-    const out = { app:'toyo-igaku-suite', type:BACKUP_TYPE_LEARNING, version:1, exportedAt:new Date().toISOString(), indexedDB:{} };
-    for(const spec of BACKUP_IDB){
-      try{
-        const db=await idbOpen(spec.db);
-        out.indexedDB[spec.db]={};
-        for(const st of spec.stores){ out.indexedDB[spec.db][st]=await idbGetAll(db, st); }
-        db.close();
-      }catch(e){ /* DB未作成（未使用アプリ）はスキップ */ }
-    }
-    downloadJson(out, `toyo-igaku-suite-learning-${new Date().toISOString().slice(0,10)}.json`);
-    showToastHome('学習データをバックアップしました');
-  }catch(e){ alert('バックアップに失敗しました: '+e.message); }
 }
 
 // 弁証の編集・問診表・カルテ、筋トレ記録、文字サイズ設定（localStorage）のバックアップ
@@ -1326,39 +1198,6 @@ function exportEditsBackup(){
     downloadJson(out, `toyo-igaku-suite-edits-${new Date().toISOString().slice(0,10)}.json`);
     showToastHome('弁証・カルテ等をバックアップしました');
   }catch(e){ alert('バックアップに失敗しました: '+e.message); }
-}
-
-/* full送信済みフラグ（syncInitialDone）を消す。
-   復元直後に呼ぶことで、次にアプリを起動したときに復元後の全データがサーバーへ送られる。
-   存在しないDBを作らないよう、onupgradeneeded では中断する（空DBを作るとアプリの起動が阻害されるため）。*/
-function idbDeleteKey(dbName, storeName, key, timeoutMs){
-  return new Promise((resolve)=>{
-    let settled = false, creating = false;
-    const finish = ()=>{ if(!settled){ settled = true; resolve(); } };
-    const timer = setTimeout(finish, timeoutMs || 4000);
-    const done = (db)=>{ try{ if(db) db.close(); }catch(e){} clearTimeout(timer); finish(); };
-    let req;
-    try{ req = indexedDB.open(dbName); }catch(e){ done(null); return; }
-    req.onupgradeneeded = (e)=>{ creating = true; try{ e.target.transaction.abort(); }catch(_){ } };
-    req.onsuccess = ()=>{
-      const db = req.result;
-      if(creating || !db.objectStoreNames.contains(storeName)){ done(db); return; }
-      try{
-        const tx = db.transaction(storeName, 'readwrite');
-        tx.objectStore(storeName).delete(key);
-        tx.oncomplete = ()=>done(db);
-        tx.onerror = ()=>done(db);
-        tx.onabort = ()=>done(db);
-      }catch(e){ done(db); }
-    };
-    req.onerror = ()=>done(null);
-    req.onblocked = ()=>done(null);
-  });
-}
-
-async function clearSyncInitialFlags(){
-  await idbDeleteKey('StudyAppDB', 'settings', 'syncInitialDone');
-  await idbDeleteKey('MarubatsuDB', 'meta', 'syncInitialDone');
 }
 
 // 復元用の共通処理：ファイルを読んで JSON にする（読めない・形式違いは alert して null）
@@ -1382,56 +1221,11 @@ function readBackupFile(ev, acceptTypes, wrongTypeMessages){
   });
 }
 
-// 学習データの復元（IndexedDB のみ。localStorage＝弁証・カルテ等には一切触れない）
-async function importLearningBackup(ev){
-  try{
-    const data=await readBackupFile(ev, [BACKUP_TYPE_LEARNING, BACKUP_TYPE_LEGACY], {
-      [BACKUP_TYPE_EDITS]: 'このファイルは弁証・カルテ等のバックアップです。\n下の「弁証・カルテ等を復元」から読み込んでください。'
-    });
-    if(!data) return;
-    // 復元対象の件数を数える（何も入っていなければ止める）
-    const dumps=data.indexedDB||{};
-    const lines=[]; let total=0;
-    BACKUP_IDB.forEach(spec=>{
-      const dump=dumps[spec.db]; if(!dump) return;
-      spec.stores.forEach(st=>{ const n=Array.isArray(dump[st])?dump[st].length:0; if(n){ total+=n; } });
-    });
-    const cnt=(db,st)=>{ const a=dumps[db]&&dumps[db][st]; return Array.isArray(a)?a.length:0; };
-    lines.push(`・国試の学習履歴 ${cnt('StudyAppDB','progress')}問／メモ ${cnt('StudyAppDB','memos')}件／出題除外 ${cnt('StudyAppDB','mutedQuestions')}件`);
-    lines.push(`・〇×の学習履歴 ${cnt('MarubatsuDB','progress')}問`);
-    if(total===0){ alert('このファイルには復元できる学習データが入っていません。'); return; }
-    if(!confirm('学習データを復元します。\n'+lines.join('\n')+'\n\n同じ問題の記録は、このファイルの内容で上書きされます。\n弁証の編集・カルテ・筋トレ記録には影響しません。よろしいですか？')) return;
-
-    // 開いているアプリが古い状態を覚えたままだと、復元後に1問解いた瞬間に古い値で上書きされるため、先に閉じる
-    await unloadAppFrame();
-    for(const spec of BACKUP_IDB){
-      const dump=dumps[spec.db]; if(!dump) continue;
-      try{
-        const db=await idbOpenEnsure(spec.db, spec.stores);
-        for(const st of spec.stores){ if(Array.isArray(dump[st])) await idbPutAll(db, st, dump[st]); }
-        db.close();
-      }catch(e){ /* 対象アプリを一度も開いていないとDBが無い */ }
-    }
-    // 復元したデータを集計サーバーへ送り直させるため、full送信済みフラグを消す。
-    // （StudyAppDB.settings に含まれる syncInitialDone をそのまま復元すると「送信済み」と判定され、
-    //   復元した学習データが一度も送られない）
-    await clearSyncInitialFlags();
-
-    showToastHome('学習データを復元しました');
-    const hasEdits = data.type===BACKUP_TYPE_LEGACY && data.localStorage && Object.keys(data.localStorage).some(k=>BACKUP_LS_KEYS.indexOf(k)!==-1);
-    alert('学習データの復元が完了しました。各アプリを開くと反映されます。' +
-      (hasEdits ? '\n\n※このファイルには弁証・カルテ等のデータも含まれていますが、今回は読み込んでいません。必要なら「弁証・カルテ等を復元」で同じファイルを選んでください。' : ''));
-    if(_restoreFromPrompt) closeBackupPrompt();
-  }catch(e){
-    alert('復元に失敗しました: '+e.message);
-  }finally{ ev.target.value=''; }
-}
-
 // 弁証・カルテ等の復元（localStorage のみ。IndexedDB＝学習履歴には一切触れない）
 async function importEditsBackup(ev){
   try{
     const data=await readBackupFile(ev, [BACKUP_TYPE_EDITS, BACKUP_TYPE_LEGACY], {
-      [BACKUP_TYPE_LEARNING]: 'このファイルは学習データのバックアップです。\n上の「学習データを復元」から読み込んでください。'
+      [BACKUP_TYPE_LEARNING]: 'このファイルは学習データのバックアップです。\n学習データの復元機能は廃止されたため、読み込めません（進捗はスプレッドシートとの同期で引き継げます）。'
     });
     if(!data) return;
     // バックアップ対象のキーだけを取り出す（ファイルに他のキーが紛れていても書き込まない）

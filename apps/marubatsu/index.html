@@ -421,7 +421,6 @@
         </div>
         <button class="btn danger" onclick="resetProgress()">🗑️ 削除</button>
       </div>
-      <div style="font-size:calc(12px*var(--fs));color:var(--sub);margin-top:10px;line-height:1.7;">バックアップ（書き出し・復元）は、統合ホーム画面下部の「学習データのバックアップ」からまとめて行えます。</div>
     </div>
   </div>
 
@@ -752,10 +751,6 @@ async function mbClearCustomQuestions(){
 //   (kokushiアプリと同じURLでOK。appフィールドで区別されます)
 const SYNC_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyUuD4I3pZS9yR5iHwwTRrsKuzF5cAvuYb7Zu-QehmqRTkNAct2RGWhCmWg8ovDkvmX/exec';
 const SYNC_APP_ID = 'marubatsu';
-const SYNC_INITIAL_META_KEY = 'syncInitialDone';
-// full送信の「版」。この数字を上げると、全端末が次回起動時に一度だけfullを再送する。
-// （旧版は value:true を保存していたため、それも「版が古い」として自動的に再送対象になる）
-const SYNC_FULL_VERSION = 2;
 
 // 端末ID（UUID）：ホーム画面(index.html)側と同じキーを使い、未生成なら自分で生成する
 const DEVICE_ID_KEY = 'suite_device_uuid';
@@ -795,18 +790,6 @@ function getStudentInfo() {
     }
   } catch (e) {}
   return { school, studentNo, deviceId: getOrCreateDeviceId() };
-}
-
-async function isInitialSyncDone() {
-  try {
-    const rec = await mbGet('meta', SYNC_INITIAL_META_KEY);
-    if (!rec || !rec.value) return false;
-    // 保存されている版が現行版と一致するときだけ「送信済み」とみなす
-    return rec.value === SYNC_FULL_VERSION;
-  } catch (e) { return false; }
-}
-async function markInitialSyncDone() {
-  try { await mbPut('meta', { key: SYNC_INITIAL_META_KEY, value: SYNC_FULL_VERSION }); } catch (e) {}
 }
 
 //=========================================================
@@ -875,7 +858,6 @@ async function flushSyncQueue() {
           method: 'POST', mode: 'no-cors', keepalive: true,
           headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(body)
         });
-        if (rec.type === 'full') await markInitialSyncDone();
         q = removeFromSyncQueue(rec);
       } catch (e) {
         break;
@@ -887,32 +869,14 @@ async function flushSyncQueue() {
 }
 window.addEventListener('online', flushSyncQueue);
 
-// 初回のみ：これまでの全進捗データをまとめて送信（呼ぶのはアプリ起動時だけ）
-let _fullSyncStarted = false;
-async function syncFullData() {
-  if (_fullSyncStarted) return;
-  _fullSyncStarted = true;
-  try {
-    const progressList = await pgGetAll();
-    const queued = enqueueSync({ type: 'full', progress: progressList });
-    // キューに積んだ時点で初回完了とみなす（キューはlocalStorageに残るので取りこぼしはない）。
-    // 送信完了まで待つと、その間の解答が「初回未完了」と判定されfullが重複送信されてしまう。
-    if (queued) await markInitialSyncDone();
-  } catch (e) {
-    _fullSyncStarted = false;
-    console.error('sync(full)エラー:', e);
-  }
-}
-
-// 起動時に1回だけ呼ぶ：未送信のキューを再送し、初回なら全データを送る
+// 起動時に1回だけ呼ぶ：前回送りきれなかった未送信キューを再送する
+// （端末内の全データを送る「初回全送信」は廃止。解答のたびに差分を送る）
 async function syncOnStartup() {
-  try {
-    if (!(await isInitialSyncDone())) await syncFullData();
-    else flushSyncQueue();
-  } catch (e) { console.error('sync(startup)エラー:', e); }
+  try { flushSyncQueue(); }
+  catch (e) { console.error('sync(startup)エラー:', e); }
 }
 
-// 1問解いた直後に呼ぶ（full は起動時に送信済みなので、ここでは常に差分のみ）
+// 1問解いた直後に呼ぶ（常に差分のみ）
 async function syncOneAnswer(qid) {
   try {
     enqueueSync({ type: 'answer', progress: PROGRESS[qid] || null });
