@@ -870,6 +870,26 @@
       </div>
       <div class="setting-row">
         <div>
+          <div class="lbl">不適切問題を出題する</div>
+          <div class="desc">試験後に不適切と判断され「改」で訂正された問題の原型を、今日の演習・科目別演習・復習で出題します（OFF既定）。問題検索には常に表示されます</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="set-show-inappropriate" onchange="updateSetting('showInappropriate', this.checked)">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="lbl">本試験モードの出題セット</div>
+          <div class="desc">「22」と「22改」のように組になる問題で、どちらを出題するか選びます（正答・解説は問題データに従います）</div>
+        </div>
+        <select id="set-exam-inappropriate" onchange="updateSetting('examInappropriateSet', this.value)">
+          <option value="revised">改題版（改を出題）</option>
+          <option value="original">当時のまま（原型を出題）</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <div>
           <div class="lbl">試験種別</div>
           <div class="desc">出題対象を絞り込み</div>
         </div>
@@ -1855,7 +1875,7 @@ const state = {
   questions: [],
   progress: {},
   memos: {},
-  settings: { shuffleChoices: false, examType: 'all', excludeYears: [] },
+  settings: { shuffleChoices: false, examType: 'all', excludeYears: [], showInappropriate: false, examInappropriateSet: 'revised' },
   mutedQuestions: {},
   currentMode: null,
   currentSubject: null,
@@ -1946,8 +1966,19 @@ async function afterDataReady() {
   const settingExclude = await dbGet('settings', 'excludeYears');
   if (settingExclude) state.settings.excludeYears = settingExclude.value || [];
 
+  const settingInap = await dbGet('settings', 'showInappropriate');
+  if (settingInap) state.settings.showInappropriate = !!settingInap.value;
+  const settingExamInap = await dbGet('settings', 'examInappropriateSet');
+  if (settingExamInap && (settingExamInap.value === 'original' || settingExamInap.value === 'revised')) {
+    state.settings.examInappropriateSet = settingExamInap.value;
+  }
+
   const sc = document.getElementById('set-shuffle-choices');
   if (sc) sc.checked = state.settings.shuffleChoices;
+  const sinap = document.getElementById('set-show-inappropriate');
+  if (sinap) sinap.checked = !!state.settings.showInappropriate;
+  const sexinap = document.getElementById('set-exam-inappropriate');
+  if (sexinap) sexinap.value = state.settings.examInappropriateSet;
   const se = document.getElementById('set-exam-type');
   if (se) se.value = state.settings.examType;
 
@@ -2257,6 +2288,14 @@ function buildExamQuestions(examType, allQuestions, yearFilter, excludeMuted = f
 
   // 除外年度フィルターを適用（examType別に独立して判定）
   let baseQuestions = allQuestions.filter(q => !isYearExcluded(q));
+
+  // 不適切問題と改題版は同じ問題番号を占めるため、設定に従ってどちらか一方だけを出題する
+  // （'revised'=改題版を出題し原型を除く／'original'=当時のまま原型を出題し改を除く）
+  if (state.settings.examInappropriateSet === 'original') {
+    baseQuestions = baseQuestions.filter(q => !isRevisedQuestion(q));
+  } else {
+    baseQuestions = baseQuestions.filter(q => !isInappropriateQuestion(q));
+  }
 
   // 本試験は本来不適切問題を含まないので、念のため除外
   for (const row of structure.sections) {
@@ -3508,6 +3547,7 @@ function getSearchExclusionTags(q) {
   const tags = [];
   if (state.mutedQuestions && state.mutedQuestions[q.id]) tags.push('🚫 出題除外');
   if (isYearExcluded(q)) tags.push('📅 除外年度');
+  if (isInappropriateQuestion(q) && !state.settings.showInappropriate) tags.push('⚠️ 不適切問題（出題OFF）');
   if (state.settings.examType !== 'all' && q.examType !== state.settings.examType) tags.push('⚙️ 試験種別設定外');
   return tags;
 }
@@ -3778,9 +3818,36 @@ function isExamOnlyQuestion(q) {
   return !q.dailyEnabled && !q.subjectEnabled && !!q.examEnabled;
 }
 
+// 不適切問題・改題の判定
+// ID末尾が「改」の問題（例: amashi_11_22改）で、「改」を除いたID（amashi_11_22）の問題も存在する場合のみ組とみなし、
+// 原型側（amashi_11_22）を不適切問題、「改」側を改題版とする。原型が無い「改」は通常の問題として扱う。
+let _inapIndexCache = null;
+function getInappropriateIndex() {
+  const qs = state.questions || [];
+  if (_inapIndexCache && _inapIndexCache.ref === qs && _inapIndexCache.len === qs.length) return _inapIndexCache;
+  const ids = new Set(qs.map(q => q.id));
+  const inap = new Set();     // 不適切問題（原型）のID
+  const revised = new Set();  // 改題版のID
+  qs.forEach(q => {
+    const id = String(q.id || '');
+    if (/改$/.test(id)) {
+      const orig = id.replace(/改$/, '');
+      if (ids.has(orig)) { inap.add(orig); revised.add(id); }
+    }
+  });
+  _inapIndexCache = { ref: qs, len: qs.length, inap, revised };
+  return _inapIndexCache;
+}
+function isInappropriateQuestion(q) { return !!q && getInappropriateIndex().inap.has(q.id); }
+function isRevisedQuestion(q) { return !!q && getInappropriateIndex().revised.has(q.id); }
+
 function filterByExamType(questions) {
   // dailyEnabled も subjectEnabled も false の問題（本試験専用）は通常モードから除外
   let normalQuestions = questions.filter(q => !isExamOnlyQuestion(q));
+  // 不適切問題（原型）は設定がOFFなら通常モードから除外
+  if (!state.settings.showInappropriate) {
+    normalQuestions = normalQuestions.filter(q => !isInappropriateQuestion(q));
+  }
   // 除外年度フィルター（examType別に独立して判定）
   normalQuestions = normalQuestions.filter(q => !isYearExcluded(q));
   // 出題除外問題を除外（科目別演習で「出題しない問題」を選んだ場合は除外しない）
@@ -4955,7 +5022,7 @@ function openMutedQuestion(qid) {
 async function updateSetting(key, value) {
   state.settings[key] = value;
   await dbPut('settings', { key, value });
-  if (key === 'examType') updateHomeStats();
+  if (key === 'examType' || key === 'showInappropriate') updateHomeStats();
 }
 
 //=========================================================
